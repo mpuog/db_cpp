@@ -1,4 +1,4 @@
-#include <dbpp.h>
+#include <dbpp.hpp>
 #include "dummy.h"
 #include "sqlite_impl.h"
 

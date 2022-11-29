@@ -1,5 +1,5 @@
 #pragma once
-#include <dbpp.h>
+#include <dbpp.hpp>
 #include <iostream>
 using namespace dbpp;
 
