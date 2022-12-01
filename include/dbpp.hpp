@@ -19,39 +19,39 @@ namespace dbpp {
 	};
 
 
-	/// Тип и константа для SQL значения NULL
+	/// пїЅ пїЅ пїЅ пїЅ SQL пїЅ NULL
 	class Null{};
 	const Null null;
 
-	typedef std::string String;  // string, или utf8string???
+	typedef std::string String;  // string, пїЅ utf8string???
 
-	/// Результат одной ячейки возвращаемой из БД
+	/// пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ
 	typedef std::variant<Null, int, String> ResutCell;
-	// Или класс, производный от него?
+	// пїЅ пїЅ, пїЅ пїЅ пїЅ?
 	//class result_cell
 	//{
 	//};
 
-	/// строка получаемых значений из БД по операциям типа SELECT
+	/// пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ SELECT
 	typedef std::vector<ResutCell> ResultRow;
 	//class result_row
 	//{
 	//};
 
-	/// Результат fetchmany/fetchall
+	/// пїЅ fetchmany/fetchall
 	typedef std::vector<ResultRow> ResultTab;
 
-	/// Входное значение для одной ячейки БД
+	/// пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ
 	typedef std::variant<Null, int, String> InputCell;
 
-	/// Входная "строка" данных
+	/// пїЅ "пїЅ" пїЅ
 	typedef std::vector<InputCell> InputRow;
 
-	/// Входная таблица данных, может не нужна,
-	/// а подойдет любая коллекция, перебираемая в цикле for
+	/// пїЅ пїЅ пїЅ, пїЅ пїЅ пїЅ,
+	/// пїЅ пїЅ пїЅ пїЅ, пїЅ пїЅ пїЅ for
 	typedef std::vector<InputRow> InputTab;
 
-	/// Интерфейс реализации курсора
+	/// пїЅ пїЅ пїЅ
 	class BaseCursor
 	{
 	protected:
@@ -83,7 +83,7 @@ namespace dbpp {
 				
 		//virtual void close() = 0;
 
-		// атрибуты, вероятно должны быть свойствами только чтение
+		// пїЅ, пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ
 		String name;
 		int type_code;
 		int rowcount = -1;
@@ -98,7 +98,7 @@ namespace dbpp {
 		void executemany(String const& query, 
 			InputTab const& input_data)
 		{
-			// "наивная" реализация, нет счетчика обработанных строк
+			// "пїЅ" пїЅ, пїЅ пїЅ пїЅ пїЅ
 			for (auto const& row : input_data)
 			{
 				cursor->execute(query, row);
@@ -156,7 +156,7 @@ namespace dbpp {
 
 	class Connection
 	{
-		//Cursor def_cursor; // вызывы функций курсора на самой базе
+		//Cursor def_cursor; // пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ
 		std::shared_ptr<BaseConnection> connection;
 	public:
 		~Connection() {}
@@ -176,19 +176,20 @@ namespace dbpp {
 		//mysql,
 	};
 
-	// NB! У ODBC строка, но у других баз большой список разных параметров-аргументов,
-	// а не строка, наверное, надо разных функций записать, или перегрузок, или сделать разбор строки в стиле параметр=значение???
+	// NB! пїЅ ODBC пїЅ, пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ-пїЅ,
+	// пїЅ пїЅ пїЅ, пїЅ, пїЅ пїЅ пїЅ пїЅ, пїЅ пїЅ, пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ пїЅ=пїЅ???
 	Connection connect(db type, std::string const& connect_string);
 
 };  // namespace dbpp 
 
+/// Realization NULL's output
 inline std::ostream &operator << (
 	std::ostream& os, dbpp::Null const&)
 {
-	os << "NULL";
-	return os;
+	return os << "NULL";
 }
 
+/// Simple realization cell's output
 inline std::ostream& operator << (
 	std::ostream& os, dbpp::ResutCell const& v)
 {
@@ -196,6 +197,7 @@ inline std::ostream& operator << (
 	return os;
 }
 
+/// Simple realization row's output
 inline std::ostream& operator << (
 	std::ostream& os, dbpp::ResultRow const& row)
 {
@@ -204,6 +206,7 @@ inline std::ostream& operator << (
 	return os;
 }
 
+/// Simple realization tab's output
 inline std::ostream& operator << (
 	std::ostream& os, dbpp::ResultTab const& tab)
 {
