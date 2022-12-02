@@ -1,62 +1,88 @@
-#include <dbpp.hpp>
+#include "common.hpp"
 #include "dummy_db.hpp"
 #include "sqlite_db.hpp"
 
-using namespace dbpp;
-
-Connection dbpp::connect(db type, std::string const& connect_string, std::string const& addParams/* = ""*/)
+namespace dbpp
 {
-	switch (type)
+	Connection connect(db type, std::string const& connect_string, std::string const& addParams/* = ""*/)
 	{
-	//case dbpp::db::odbc:
-	//	break;
-	//case dbpp::db::mysql:
-	//	break;
-	case db::sqlite:
-		return Connection(std::unique_ptr<BaseConnection>(
-			new SqliteConnection(connect_string)));
-	default:
-		return Connection(std::unique_ptr<BaseConnection>(
-			new DummyConnection));
-	}
-}
-
-dbpp::Cursor::Cursor(std::shared_ptr<BaseConnection> connection_)
-	: cursor(connection_->cursor())
-{}
-
-std::optional<dbpp::ResultRow> dbpp::Cursor::fetchone()
-{
-	return cursor->fetchone();
-}
-
-dbpp::Connection::Connection(std::shared_ptr<BaseConnection> connection_)
-	: connection(connection_)
-{}
-
-Cursor dbpp::Connection::cursor()
-{
-	return Cursor(connection);
-}
-
-void dbpp::BaseCursor::execute(String const& sql, InputRow const&row)
-{
-	resultTab.clear();
-	columns.clear();
-	execute_impl(sql, row);
-}
-
-/// Simple implementation by reading from resutTab
-/// @retval "empty" std::optional if all data recieved
-std::optional<dbpp::ResultRow> dbpp::BaseCursor::fetchone()
-{
-	std::optional<dbpp::ResultRow> resultRow;
-
-	if (!resultTab.empty())
-	{
-		resultRow = std::move(resultTab.front());
-		resultTab.pop_front();
+		switch (type)
+		{
+			//case dbpp::db::odbc:
+			//	break;
+			//case dbpp::db::mysql:
+			//	break;
+		case db::sqlite:
+			return Connection(std::unique_ptr<BaseConnection>(
+				new SqliteConnection(connect_string)));
+		default:
+			return Connection(std::unique_ptr<BaseConnection>(
+				new DummyConnection));
+		}
 	}
 
-	return resultRow;
-}
+	Cursor::Cursor(std::shared_ptr<BaseConnection> connection_)
+		: cursor(connection_->cursor())
+	{}
+
+	void Cursor::execute(String const& query, InputRow const& data)
+	{
+		cursor->execute(query, data);
+	}
+
+	void Cursor::executemany(String const& query, 
+		InputTab const& input_data)
+	{
+		for (auto const& row : input_data)
+		{
+			cursor->execute(query, row);
+		}
+	}
+
+	std::optional<ResultRow> Cursor::fetchone()
+	{
+		return cursor->fetchone();
+	}
+
+	ResultTab Cursor::fetchall() //< @todo fetchmany();
+	{
+		ResultTab rt;
+		while (auto row = fetchone())
+			rt.push_back(std::move(*row));
+		return rt;
+	}
+
+	Connection::Connection(std::shared_ptr<BaseConnection> connection_)
+		: connection(connection_)
+	{}
+
+	Cursor Connection::cursor()
+	{
+		return Cursor(connection);
+	}
+
+	void BaseCursor::execute(String const& sql, InputRow const& row)
+	{
+		resultTab.clear();
+		columns.clear();
+		execute_impl(sql, row);
+	}
+
+	/// Simple implementation by reading from resutTab
+	/// @retval "empty" std::optional if all data recieved
+	std::optional<ResultRow> BaseCursor::fetchone()
+	{
+		std::optional<ResultRow> resultRow;
+
+		if (!resultTab.empty())
+		{
+			resultRow = std::move(resultTab.front());
+			resultTab.pop_front();
+		}
+
+		return resultRow;
+	}
+
+};  // namespace dbpp
+
+

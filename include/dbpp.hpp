@@ -47,71 +47,33 @@ namespace dbpp {
 	using InputTab = std::vector<InputRow> ;
 
 	/// Inner cursor interface
-	class BaseCursor
-	{
-	protected:
-		BaseCursor() = default;
-
-		virtual void execute_impl(
-			String const& sql, InputRow const&) = 0;
-	public:
-		std::deque<ResultRow> resultTab;
-		std::vector<std::string> columns;
-
-		virtual 		~BaseCursor() {}
-		BaseCursor (BaseCursor&&) = default;
-
-		void execute(String const& sql, InputRow const&);
-		virtual std::optional<dbpp::ResultRow> fetchone();
-	};
-
+	class BaseCursor;
+	/// Inner connection interface
 	class BaseConnection;
 
 	/// Cursor
 	class Cursor {
-		std::unique_ptr<BaseCursor> cursor;
+		std::shared_ptr<BaseCursor> cursor;
 	public:
 		Cursor() = delete;
 		Cursor(Cursor const&) = delete;
 		Cursor& operator = (Cursor const&) = delete;
 
 		Cursor(std::shared_ptr<BaseConnection> connection_);
-				
 		//virtual void close() = 0;
-
-		// �, � � � � � �
-		String name;
-		int type_code;
+		// read-only properties???
+		String name = "";
+		int type_code = 0;
 		int rowcount = -1;
-
+		// reda/write property
 		unsigned arraysize = 1;
 
-		void execute(String const& query, InputRow const& data = {})
-		{
-			cursor->execute(query, data);
-		}
-
+		void execute(String const& query, InputRow const& data = {});
 		void executemany(String const& query, 
-			InputTab const& input_data)
-		{
-			for (auto const& row : input_data)
-			{
-				cursor->execute(query, row);
-			}
-		}
-
+			InputTab const& input_data);
 		//virtual void callproc(string_t const& proc_name) = 0; // ??
-
 		std::optional<dbpp::ResultRow> fetchone();
-
-		ResultTab fetchall() //< @todo fetchmany();
-		{
-			ResultTab rt;
-			while (auto row = fetchone())
-				rt.push_back(std::move(*row));
-			return rt;
-		}
-
+		ResultTab fetchall();
 #if 0
 		template <class out_iterator>
 		unsigned fetchall(out_iterator oi)
@@ -128,17 +90,7 @@ namespace dbpp {
 	};
 
 	/// Inner connevtion interface
-	class BaseConnection
-	{
-	protected:
-		BaseConnection(BaseConnection&&) = default;
-		BaseConnection() = default;
-	public:
-		virtual ~BaseConnection() {}
-
-		virtual std::unique_ptr<BaseCursor> cursor() = 0;
-	};
-
+	class BaseConnection;
 
 	class Connection
 	{
@@ -147,19 +99,16 @@ namespace dbpp {
 	public:
 		~Connection() {}
 		Connection(std::shared_ptr<BaseConnection> connection_);
-
 		//Connection(Connection const&) = delete;
 		//Connection& operator = (Connection const&) = delete;
-
 		Cursor cursor();
 		//  commit(); close(); rollback();
 	};
 
 	enum class db {
 		dummy,
-		//odbc,
 		sqlite,
-		//mysql,
+		//odbc, mysql, postgress ...
 	};
 
 	/// Create connection to db
@@ -179,7 +128,7 @@ inline std::ostream &operator << (
 }
 
 /// Realization BLOB's output
-/// @todo
+/// @todo Now only print 'BLOB'
 inline std::ostream& operator << (
 	std::ostream& os, dbpp::BLOB const&)
 {
