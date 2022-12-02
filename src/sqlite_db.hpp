@@ -1,12 +1,11 @@
 #pragma once
 #include "sqlite/sqlite3.h"
 #include "common.hpp"
-#include <iostream>
 using namespace dbpp;
 
 class SqliteCursor : public BaseCursor
 {
-	sqlite3* db;
+	std::shared_ptr<sqlite3> db;
 
 	void execute0(const dbpp::String& sql, const dbpp::InputRow& data);
 	void execute(String const& query, InputRow const& data);
@@ -15,7 +14,7 @@ public:
 	//virtual void callproc(string_t const& proc_name) override
 	//{		}
 
-	SqliteCursor(sqlite3* db);
+	SqliteCursor(std::shared_ptr<sqlite3> db);
 
 	void execute_impl(String const& query, InputRow const& data) override;
 };
@@ -26,15 +25,15 @@ class SqliteConnection : public BaseConnection
 	
 public:
 
-	sqlite3* db = nullptr;
+	std::shared_ptr<sqlite3> db;
 
 	~SqliteConnection();
 
-	SqliteConnection(std::string const& connect_string);
+	SqliteConnection(std::string const& connectString, std::string const& addParams);
 	SqliteConnection(SqliteConnection&&) = default;
 
-	virtual std::unique_ptr<BaseCursor> cursor() override
+	virtual BaseCursor *cursor() override
 	{
-		return std::unique_ptr<BaseCursor>(new SqliteCursor(db));
+		return new SqliteCursor(db);
 	}
 };

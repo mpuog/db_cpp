@@ -29,9 +29,9 @@ public:
 	DummyConnection(DummyConnection&&) = default;
 
 	// Inherited via BaseConnection
-	virtual std::unique_ptr<BaseCursor> cursor() override
+	virtual BaseCursor* cursor() override
 	{
-		return std::unique_ptr<BaseCursor>(new DummyCursor);
+		return new DummyCursor;
 	}
 
 };

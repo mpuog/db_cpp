@@ -18,6 +18,12 @@ namespace dbpp {
 		{}
 	};
 
+	/// Various types of db
+	enum class db {
+		dummy,
+		sqlite,
+		//odbc, mysql, postgress ...
+	};
 
 	/// Type NULL
 	class Null{}; 
@@ -29,7 +35,7 @@ namespace dbpp {
 	using BLOB = std::vector<char>;
 
 	/// Output cell from SQL SELECT operation
-	using ResutCell = std::variant<Null, int, String>;
+	using ResutCell = std::variant<Null, int, double, String, BLOB>;
 
 	/// One result row of SELECT operation
 	using ResultRow = std::vector<ResutCell>;
@@ -38,7 +44,7 @@ namespace dbpp {
 	using ResultTab = std::vector<ResultRow> ;
 
 	/// Input datum for SQL INSERT/UPDATE operation. 
-	using InputCell = std::variant<Null, int, String, BLOB>;
+	using InputCell = std::variant<Null, int, double, String, BLOB>;
 
 	/// Input row for SQL INSERT/UPDATE operation
 	using InputRow = std::vector<InputCell>;
@@ -53,19 +59,21 @@ namespace dbpp {
 
 	/// Cursor
 	class Cursor {
-		std::shared_ptr<BaseCursor> cursor;
+		BaseCursor *cursor = nullptr;
+		friend class Connection;
+		Cursor(std::shared_ptr<BaseConnection> connection_);
 	public:
 		Cursor() = delete;
 		Cursor(Cursor const&) = delete;
 		Cursor& operator = (Cursor const&) = delete;
+		~Cursor();
 
-		Cursor(std::shared_ptr<BaseConnection> connection_);
 		//virtual void close() = 0;
 		// read-only properties???
 		String name = "";
 		int type_code = 0;
 		int rowcount = -1;
-		// reda/write property
+		// read/write property
 		unsigned arraysize = 1;
 
 		void execute(String const& query, InputRow const& data = {});
@@ -89,34 +97,25 @@ namespace dbpp {
 #endif // 0
 	};
 
-	/// Inner connevtion interface
-	class BaseConnection;
-
 	class Connection
 	{
 		//Cursor def_cursor; //  ??
 		std::shared_ptr<BaseConnection> connection;
+		Connection(BaseConnection *connection_);
 	public:
-		~Connection() {}
-		Connection(std::shared_ptr<BaseConnection> connection_);
-		//Connection(Connection const&) = delete;
-		//Connection& operator = (Connection const&) = delete;
+		~Connection();
+		Connection(Connection const&) = delete;
+		Connection& operator = (Connection const&) = delete;
 		Cursor cursor();
 		//  commit(); close(); rollback();
-	};
 
-	enum class db {
-		dummy,
-		sqlite,
-		//odbc, mysql, postgress ...
+		/// Create connection to db
+		/// @param connectString : Main db param. Name db for sqlite, conect string for ODBC, etc.
+		/// @param addParams : Addtitional params in syntax name1=value1;name2=value2,... 
+		///                    Similar to additional params in python's sqlite3.connect() function. 
+		///                    Params are specific for each db type and is absond for ODBC 
+		static Connection connect(db type, std::string const& connectString, std::string const& addParams = "");
 	};
-
-	/// Create connection to db
-	/// @param connectString : Main db param. Name db for sqlite, conect string for ODBC, etc.
-	/// @param addParams : Addtitional params in syntax name1=value1;name2=value2,... 
-	///                    Similar to additional params in python's sqlite3.connect() function. 
-	///                    Params are specific for each db type and is absond for ODBC 
-	Connection connect(db type, std::string const& connectString, std::string const& addParams="");
 
 };  // namespace dbpp 
 

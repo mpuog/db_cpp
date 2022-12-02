@@ -7,7 +7,7 @@ using namespace dbpp;
 
 void f()
 {
-    auto connection = connect(db::sqlite, ":memory:");
+    auto connection = Connection::connect(db::sqlite, ":memory:");
 
     std::string sql_create_table = "CREATE TABLE PERSON("
         "ID INT PRIMARY KEY     NOT NULL, "
@@ -21,15 +21,16 @@ void f()
         "INSERT INTO PERSON VALUES(2, 'BILL', 'ALLEN', 20, 'SEATTLE', 300.22);"
         "INSERT INTO PERSON VALUES(3, 'PAUL', 'JOBS', 24, 'SEATTLE', 9900.0);");
 
-    std::string sql_delete = "DELETE from PERSON where ID=2; " \
-        "SELECT * from PERSON";
+    std::string sql_select = "SELECT * from PERSON;";
+    std::string sql_delete = "DELETE from PERSON where ID=2;";
 
     auto cursor = connection.cursor();
     cursor.execute(sql_create_table);
     cursor.execute(sql_insert);
-    cursor.execute("SELECT * FROM PERSON;");
+    cursor.execute(sql_select);
     std::cout << cursor.fetchall();
     cursor.execute(sql_delete);
+    cursor.execute(sql_select);
     std::cout << cursor.fetchall();
 
 #if 0
