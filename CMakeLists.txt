@@ -10,6 +10,8 @@ add_executable (db_cmake  "src/dbpp.cpp" "test/test.cpp" "src/sqlite/sqlite3.c" 
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_property(TARGET db_cmake PROPERTY CXX_STANDARD 17)
-target_link_libraries(db_cmake dl pthread)
+IF (NOT WIN32)
+	target_link_libraries(db_cmake dl pthread)
+ENDIF()
 
 # TODO: Add tests and install targets if needed.

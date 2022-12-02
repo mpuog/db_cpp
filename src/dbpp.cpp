@@ -4,7 +4,7 @@
 
 using namespace dbpp;
 
-Connection dbpp::connect(db type, std::string const& connect_string)
+Connection dbpp::connect(db type, std::string const& connect_string, std::string const& addParams/* = ""*/)
 {
 	switch (type)
 	{
@@ -24,6 +24,11 @@ Connection dbpp::connect(db type, std::string const& connect_string)
 dbpp::Cursor::Cursor(std::shared_ptr<BaseConnection> connection_)
 	: cursor(connection_->cursor())
 {}
+
+std::optional<dbpp::ResultRow> dbpp::Cursor::fetchone()
+{
+	return cursor->fetchone();
+}
 
 dbpp::Connection::Connection(std::shared_ptr<BaseConnection> connection_)
 	: connection(connection_)

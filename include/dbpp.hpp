@@ -19,39 +19,34 @@ namespace dbpp {
 	};
 
 
-	/// � � � � SQL � NULL
-	class Null{};
-	const Null null;
+	/// Type NULL
+	class Null{}; 
+	/// NULL constant
+	const Null null; 
+	/// Type for string data
+	using String = std::string;  // string or utf8string???
+	/// Type for binary data
+	using BLOB = std::vector<char>;
 
-	typedef std::string String;  // string, � utf8string???
+	/// Output cell from SQL SELECT operation
+	using ResutCell = std::variant<Null, int, String>;
 
-	/// � � � � � �
-	typedef std::variant<Null, int, String> ResutCell;
-	// � �, � � �?
-	//class result_cell
-	//{
-	//};
+	/// One result row of SELECT operation
+	using ResultRow = std::vector<ResutCell>;
 
-	/// � � � � � � � � SELECT
-	typedef std::vector<ResutCell> ResultRow;
-	//class result_row
-	//{
-	//};
+	/// Result of fetchmany/fetchall
+	using ResultTab = std::vector<ResultRow> ;
 
-	/// � fetchmany/fetchall
-	typedef std::vector<ResultRow> ResultTab;
+	/// Input datum for SQL INSERT/UPDATE operation. 
+	using InputCell = std::variant<Null, int, String, BLOB>;
 
-	/// � � � � � �
-	typedef std::variant<Null, int, String> InputCell;
+	/// Input row for SQL INSERT/UPDATE operation
+	using InputRow = std::vector<InputCell>;
 
-	/// � "�" �
-	typedef std::vector<InputCell> InputRow;
+	/// Input tab for SQL INSERT/UPDATE executemany operation
+	using InputTab = std::vector<InputRow> ;
 
-	/// � � �, � � �,
-	/// � � � �, � � � for
-	typedef std::vector<InputRow> InputTab;
-
-	/// � � �
+	/// Inner cursor interface
 	class BaseCursor
 	{
 	protected:
@@ -72,6 +67,7 @@ namespace dbpp {
 
 	class BaseConnection;
 
+	/// Cursor
 	class Cursor {
 		std::unique_ptr<BaseCursor> cursor;
 	public:
@@ -98,7 +94,6 @@ namespace dbpp {
 		void executemany(String const& query, 
 			InputTab const& input_data)
 		{
-			// "�" �, � � � �
 			for (auto const& row : input_data)
 			{
 				cursor->execute(query, row);
@@ -107,12 +102,9 @@ namespace dbpp {
 
 		//virtual void callproc(string_t const& proc_name) = 0; // ??
 
-		std::optional<dbpp::ResultRow> fetchone()
-		{
-			return cursor->fetchone();
-		}
+		std::optional<dbpp::ResultRow> fetchone();
 
-		ResultTab fetchall() // fetchmany();
+		ResultTab fetchall() //< @todo fetchmany();
 		{
 			ResultTab rt;
 			while (auto row = fetchone())
@@ -132,16 +124,10 @@ namespace dbpp {
 			}
 			return n;
 		}
-
-		ResultTab fetchall() // fetchmany();
-		{
-			ResultTab rt;
-			fetchall(std::back_inserter(rt));
-			return std::move(rt);
-		}
 #endif // 0
 	};
 
+	/// Inner connevtion interface
 	class BaseConnection
 	{
 	protected:
@@ -156,7 +142,7 @@ namespace dbpp {
 
 	class Connection
 	{
-		//Cursor def_cursor; // � � � � � �
+		//Cursor def_cursor; //  ??
 		std::shared_ptr<BaseConnection> connection;
 	public:
 		~Connection() {}
@@ -176,9 +162,12 @@ namespace dbpp {
 		//mysql,
 	};
 
-	// NB! � ODBC �, � � � � � � � �-�,
-	// � � �, �, � � � �, � �, � � � � � � �=�???
-	Connection connect(db type, std::string const& connect_string);
+	/// Create connection to db
+	/// @param connectString : Main db param. Name db for sqlite, conect string for ODBC, etc.
+	/// @param addParams : Addtitional params in syntax name1=value1;name2=value2,... 
+	///                    Similar to additional params in python's sqlite3.connect() function. 
+	///                    Params are specific for each db type and is absond for ODBC 
+	Connection connect(db type, std::string const& connectString, std::string const& addParams="");
 
 };  // namespace dbpp 
 
@@ -188,6 +177,15 @@ inline std::ostream &operator << (
 {
 	return os << "NULL";
 }
+
+/// Realization BLOB's output
+/// @todo
+inline std::ostream& operator << (
+	std::ostream& os, dbpp::BLOB const&)
+{
+	return os << "BLOB";
+}
+
 
 /// Simple realization cell's output
 inline std::ostream& operator << (
