@@ -5,10 +5,10 @@ using namespace dbpp;
 
 class SqliteCursor : public BaseCursor
 {
+// ==== data ====
 	std::shared_ptr<sqlite3> db;
-
-	void execute0(const dbpp::String& sql, const dbpp::InputRow& data);
-	void execute(String const& query, InputRow const& data);
+// ==== functions ===
+    ResultRow GetRow(sqlite3_stmt* pStmt);
 public:
 
 	//virtual void callproc(string_t const& proc_name) override

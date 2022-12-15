@@ -28,56 +28,51 @@ SqliteCursor::SqliteCursor(std::shared_ptr<sqlite3> db_)
 {
 }
 
-static int callback(void* data, int argc, char** argv, char** azColName)
+
+ResultRow SqliteCursor::GetRow(sqlite3_stmt* pStmt)
 {
-	SqliteCursor *cursor = static_cast<SqliteCursor*>(data);
-	ResultRow resultRow;
-	bool flagFirst = cursor->columns.empty();
-	for (int i = 0; i < argc; i++) {
-		if (argv[i])
-			resultRow.emplace_back(std::string(argv[i]));
-		else
-			resultRow.emplace_back(null);
-		if (flagFirst)
-			cursor->columns.emplace_back(azColName[i]);
-	}
-	cursor->resultTab.push_back(std::move(resultRow));
-	return 0;
+    ResultRow row;
+    int nData = sqlite3_data_count(pStmt);
+    for (int i = 0; i < nData; i++)
+    {
+        int type = sqlite3_column_type(pStmt, i);
+        switch (type)
+        {
+        case SQLITE_INTEGER: {
+            row.emplace_back(sqlite3_column_int(pStmt, i));
+            break; }
+        case SQLITE_FLOAT: {
+            row.emplace_back(sqlite3_column_double(pStmt, i));
+            break; }
+        case SQLITE_BLOB: {
+            int n = sqlite3_column_bytes(pStmt, i);
+            BLOB blob(n);
+            std::memcpy(&blob[0], sqlite3_column_blob(pStmt, i), n);
+            row.push_back(std::move(blob));
+            break; }
+        case SQLITE_NULL: {
+            row.emplace_back(null);
+            break; }
+        case SQLITE_TEXT: {
+            row.emplace_back(String(
+                (char*)sqlite3_column_text(pStmt, i)));
+            break; }
+        default:
+            break;
+        }
+
+    }
+    return row;
 }
 
 
 void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
 {
-	//execute(sql, data);
-	if (sql.substr(0,6) == "SELECT")
-		execute(sql, data);
-	else
-		execute(sql, data);
-
-}
-
-// test-only implemantation by call sqlite3_exec()
-void SqliteCursor::execute0(const dbpp::String& sql, const dbpp::InputRow& data)
-{
-	resultTab.clear();
-
-	char* messaggeError;
-	int exit = sqlite3_exec(
-		db.get(), sql.c_str(), callback, this, &messaggeError);
-	if (exit) {
-		Error error(messaggeError);
-		sqlite3_free(messaggeError);
-		throw error;
-	}
-}
-
-void SqliteCursor::execute(String const& query, InputRow const& data)
-{
-	const char* zSql = query.c_str();
+	const char* zSql = sql.c_str();
 	int rc = SQLITE_OK;         /* Return code */
 	const char* zLeftover;      /* Tail of unprocessed SQL */
 	sqlite3_stmt* pStmt = 0;    /* The current SQL statement */
-    char** pzErrMsg;
+    //char** pzErrMsg;
     void* pArg = this;  // FIXME remove
 
 	// FIXME checking  sqlite3_finalize()
@@ -112,40 +107,11 @@ void SqliteCursor::execute(String const& query, InputRow const& data)
 				for (int i = 0; i < nCol; i++) 
 					columns.emplace_back(sqlite3_column_name(pStmt, i));
 			}
-			ResultRow row;
-			int nData = sqlite3_data_count(pStmt);
-			for (int i = 0; i < nData; i++)
-			{
-				int type = sqlite3_column_type(pStmt, i);
-				switch (type)
-				{
-				case SQLITE_INTEGER: {
-					row.emplace_back(sqlite3_column_int(pStmt, i));
-					break; }
-				case SQLITE_FLOAT: {
-					row.emplace_back(sqlite3_column_double(pStmt, i));
-					break; }
-				case SQLITE_BLOB: {
-					int n = sqlite3_column_bytes(pStmt, i);
-					BLOB blob(n);
-					std::memcpy(&blob[0], sqlite3_column_blob(pStmt, i), n);
-					row.push_back(std::move(blob));
-					break; }
-				case SQLITE_NULL: {
-					row.emplace_back(null);
-					break; }
-				case SQLITE_TEXT: {
-					row.emplace_back(String(
-						(char*)sqlite3_column_text(pStmt, i)));
-					break; }
-				default:
-					break;
-				}
-
-			}
-			resultTab.push_back(std::move(row));
+			resultTab.push_back(std::move(GetRow(pStmt)));
 		}
 		rc = sqlite3_finalize(pStmt);
 		zSql = zLeftover;
     }  // Cycle for all SQL single statements
+
+    // FIXME check RC and throw exception
 }
