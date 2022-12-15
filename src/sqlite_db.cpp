@@ -53,7 +53,19 @@ void SqliteConnection::commit()
       	int rc = sqlite3_prepare_v2(db.get(), "COMMIT;", -1, &pStmt, nullptr);
         rc = sqlite3_step(pStmt);
     }
-}
+} 
+
+void SqliteConnection::rollback() 
+{
+    if (!autocommit())
+    {
+    	sqlite3_stmt* pStmt;
+      	int rc = sqlite3_prepare_v2(db.get(), "ROLLBACK;", -1, &pStmt, nullptr);
+        rc = sqlite3_step(pStmt);
+    }
+} 
+
+
 
 // =============== SqliteCursor =====================
 

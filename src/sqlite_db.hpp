@@ -35,6 +35,7 @@ public:
     bool autocommit() final;
     void autocommit(bool autocommitFlag) final;
     void commit() final;
+    void rollback() final;
 
 	BaseCursor *cursor() final {
 		return new SqliteCursor(db);

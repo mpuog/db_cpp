@@ -18,6 +18,8 @@ namespace dbpp
         {}
         virtual void commit() 
         {}
+        virtual void rollback() 
+        {}
 	};
 
 	class BaseCursor

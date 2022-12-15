@@ -109,7 +109,8 @@ namespace dbpp {
         bool autocommit();
         void autocommit(bool autocommitFlag);
         void commit();  
-		//  close(); rollback();
+        void rollback();
+		//  close(); 
 
 		/// Create connection to db
 		/// @param connectString : Main db param. Name db for sqlite, conect string for ODBC, etc.

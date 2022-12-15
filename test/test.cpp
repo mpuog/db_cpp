@@ -38,7 +38,11 @@ void f()
     std::cout <<  connection.autocommit() << " - autocommit status before insert\n";
     cursor.execute(sql_insert);
     std::cout <<  connection.autocommit() << " - autocommit status after insert\n";
+    show_tab(cursor, "after INSERT before rollback");
+    connection.rollback();
     show_tab(cursor, "after INSERT before commit");
+    cursor.execute(sql_insert);
+    connection.rollback();
     std::cout <<  connection.autocommit() << " - autocommit status before commit\n";
     connection.commit();
     std::cout <<  connection.autocommit() << " - autocommit status after commit\n";

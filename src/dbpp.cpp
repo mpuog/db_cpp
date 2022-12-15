@@ -49,6 +49,10 @@ namespace dbpp
         connection->commit();
     }
 
+    void Connection::rollback()
+    {
+        connection->rollback();
+    }
 
 	// ============ Cursor ========================
 
