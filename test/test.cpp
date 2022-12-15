@@ -20,6 +20,7 @@ void f()
     std::string sql_insert("INSERT INTO PERSON VALUES(1, 'STEVE', 'GATES', 30, 'PALO ALTO', 1000.0);"
         "INSERT INTO PERSON VALUES(2, 'BILL', 'ALLEN', 20, 'SEATTLE', 300.22);"
         "INSERT INTO PERSON VALUES(3, 'PAUL', 'JOBS', 24, 'SEATTLE', 9900.0);");
+    std::string sql_insert_many("INSERT INTO PERSON VALUES(?, ?, ?, ?, ?, ?);");
 
     std::string sql_select = "SELECT * from PERSON;";
     std::string sql_delete = "DELETE from PERSON where ID=2;";
