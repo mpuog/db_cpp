@@ -34,13 +34,13 @@ void SqliteConnection::autocommit(bool autocommitFlag)
     if (currentAutoCommit && !autocommitFlag)
     {
     	sqlite3_stmt* pStmt;
-      	int rc = sqlite3_prepare_v2(db.get(), "BEGIN;", -1, &pStmt, nullptr);
+      	int rc = sqlite3_prepare_v2(db.get(), "BEGIN", -1, &pStmt, nullptr);
         rc = sqlite3_step(pStmt);
     }
     else if (!currentAutoCommit && autocommitFlag)
     {
     	sqlite3_stmt* pStmt;
-      	int rc = sqlite3_prepare_v2(db.get(), "COMMIT;", -1, &pStmt, nullptr);
+      	int rc = sqlite3_prepare_v2(db.get(), "COMMIT", -1, &pStmt, nullptr);
         rc = sqlite3_step(pStmt);
     }
 }
@@ -60,9 +60,30 @@ void SqliteConnection::rollback()
     if (!autocommit())
     {
     	sqlite3_stmt* pStmt;
-      	int rc = sqlite3_prepare_v2(db.get(), "ROLLBACK;", -1, &pStmt, nullptr);
+      	int rc = sqlite3_prepare_v2(db.get(), "ROLLBACK", -1, &pStmt, nullptr);
         rc = sqlite3_step(pStmt);
     }
+    /*
+    if (!sqlite3_get_autocommit(self->db)) {
+        int rc;
+
+        Py_BEGIN_ALLOW_THREADS
+        sqlite3_stmt *statement;
+        rc = sqlite3_prepare_v2(self->db, "ROLLBACK", 9, &statement, NULL);
+        if (rc == SQLITE_OK) {
+            (void)sqlite3_step(statement);
+            rc = sqlite3_finalize(statement);
+        }
+        Py_END_ALLOW_THREADS
+
+        if (rc != SQLITE_OK) {
+            (void)_pysqlite_seterror(self->state, self->db);
+            return NULL;
+        }
+
+    }
+
+*/
 } 
 
 
