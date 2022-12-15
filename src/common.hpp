@@ -11,6 +11,13 @@ namespace dbpp
 	public:
 		virtual ~BaseConnection() {}
 		virtual BaseCursor *cursor() = 0;
+        virtual bool autocommit() {
+            return true;
+        }
+        virtual void autocommit(bool autocommitFlag) 
+        {}
+        virtual void commit() 
+        {}
 	};
 
 	class BaseCursor
@@ -21,7 +28,10 @@ namespace dbpp
 		virtual void execute_impl(
 			String const& sql, InputRow const&) = 0;
 	public:
+        /// Data fo stupid method when select operator puts all data to resultTab.
+        /// Slow if select without restrictions on quantity, but not all data need later.
 		std::deque<ResultRow> resultTab;
+        /// Columns names
 		std::vector<String> columns;
 		virtual 		~BaseCursor() {}
 		BaseCursor(BaseCursor&&) = default;
@@ -35,7 +45,7 @@ namespace dbpp
 
 		/// Simple implementation by reading from resutTab
 		/// @retval "empty" std::optional if all data recieved
-		virtual std::optional<dbpp::ResultRow> fetchone()
+		virtual std::optional<ResultRow> fetchone()
 		{
 			std::optional<ResultRow> resultRow;
 
@@ -49,5 +59,6 @@ namespace dbpp
 		}
 	};
 
-}
+}  // namespace dbpp
+
 

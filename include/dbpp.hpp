@@ -82,8 +82,8 @@ namespace dbpp {
 		//virtual void callproc(string_t const& proc_name) = 0; // ??
 		std::optional<dbpp::ResultRow> fetchone();
 		ResultTab fetchall();
-#if 0
-		template <class out_iterator>
+
+        template <class out_iterator>
 		unsigned fetchall(out_iterator oi)
 		{
 			unsigned n = 0;
@@ -94,7 +94,6 @@ namespace dbpp {
 			}
 			return n;
 		}
-#endif // 0
 	};
 
 	class Connection
@@ -107,7 +106,10 @@ namespace dbpp {
 		Connection(Connection const&) = delete;
 		Connection& operator = (Connection const&) = delete;
 		Cursor cursor();
-		//  commit(); close(); rollback();
+        bool autocommit();
+        void autocommit(bool autocommitFlag);
+        void commit();  
+		//  close(); rollback();
 
 		/// Create connection to db
 		/// @param connectString : Main db param. Name db for sqlite, conect string for ODBC, etc.

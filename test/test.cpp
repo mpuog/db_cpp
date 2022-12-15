@@ -5,43 +5,46 @@
 using namespace dbpp;
 #if 1
 
+const std::string sql_create_table = "CREATE TABLE PERSON("
+    "ID INT PRIMARY KEY     NOT NULL, "
+    "NAME           TEXT    NOT NULL, "
+    "SURNAME          TEXT     NOT NULL, "
+    "AGE            INT     NOT NULL, "
+    "ADDRESS        CHAR(50), "
+    "SALARY         REAL );";
+
+const std::string sql_insert("INSERT INTO PERSON VALUES(1, 'STEVE', 'GATES', 30, 'PALO ALTO', 1000.0);"
+    "INSERT INTO PERSON VALUES(2, 'BILL', 'ALLEN', 20, 'SEATTLE', 300.22);"
+    "INSERT INTO PERSON VALUES(3, 'PAUL', 'JOBS', 24, 'SEATTLE', 9900.0);");
+const std::string sql_insert_many("INSERT INTO PERSON VALUES(?, ?, ?, ?, ?, ?);");
+
+const std::string sql_select = "SELECT * from PERSON;";
+const std::string sql_delete = "DELETE from PERSON where ID=2;";
+
+void show_tab(Cursor &cursor, std::string const &comment="", std::string const &tabName="PERSON")
+{
+    cursor.execute("SELECT * from " + tabName);
+    std::cout << "" + tabName + " CONTENT " + comment + ":\n" << cursor.fetchall();
+}
+
 void f()
 {
     auto connection = Connection::connect(db::sqlite, ":memory:");
 
-    std::string sql_create_table = "CREATE TABLE PERSON("
-        "ID INT PRIMARY KEY     NOT NULL, "
-        "NAME           TEXT    NOT NULL, "
-        "SURNAME          TEXT     NOT NULL, "
-        "AGE            INT     NOT NULL, "
-        "ADDRESS        CHAR(50), "
-        "SALARY         REAL );";
-
-    std::string sql_insert("INSERT INTO PERSON VALUES(1, 'STEVE', 'GATES', 30, 'PALO ALTO', 1000.0);"
-        "INSERT INTO PERSON VALUES(2, 'BILL', 'ALLEN', 20, 'SEATTLE', 300.22);"
-        "INSERT INTO PERSON VALUES(3, 'PAUL', 'JOBS', 24, 'SEATTLE', 9900.0);");
-    std::string sql_insert_many("INSERT INTO PERSON VALUES(?, ?, ?, ?, ?, ?);");
-
-    std::string sql_select = "SELECT * from PERSON;";
-    std::string sql_delete = "DELETE from PERSON where ID=2;";
-
     auto cursor = connection.cursor();
     cursor.execute(sql_create_table);
+    std::cout <<  connection.autocommit() << " - autocommit status after create\n";
+    connection.autocommit(false);
+    std::cout <<  connection.autocommit() << " - autocommit status before insert\n";
     cursor.execute(sql_insert);
-    cursor.execute(sql_select);
-    std::cout << cursor.fetchall();
+    std::cout <<  connection.autocommit() << " - autocommit status after insert\n";
+    show_tab(cursor, "after INSERT before commit");
+    std::cout <<  connection.autocommit() << " - autocommit status before commit\n";
+    connection.commit();
+    std::cout <<  connection.autocommit() << " - autocommit status after commit\n";
+    show_tab(cursor, "after INSERT after commit");
     cursor.execute(sql_delete);
-    cursor.execute(sql_select);
-    std::cout << cursor.fetchall();
-
-#if 0
-    cursor.execute_impl("", { null, 21, "qu-qu" });
-    cursor.exeñutemany("", { { null, 21}, {"qu-qu", null} });
-    auto r = cursor.fetchone();
-    std::variant<int> v = 10;
-    for (auto const& x : *r)
-        std::cout << x << ", ";
-#endif // 0
+    show_tab(cursor, "after DELETE");
 }
 #endif // 0
 

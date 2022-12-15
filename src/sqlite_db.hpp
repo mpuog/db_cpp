@@ -32,8 +32,11 @@ public:
 	SqliteConnection(std::string const& connectString, std::string const& addParams);
 	SqliteConnection(SqliteConnection&&) = default;
 
-	virtual BaseCursor *cursor() override
-	{
+    bool autocommit() final;
+    void autocommit(bool autocommitFlag) final;
+    void commit() final;
+
+	BaseCursor *cursor() final {
 		return new SqliteCursor(db);
 	}
 };

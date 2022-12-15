@@ -34,6 +34,22 @@ namespace dbpp
 		return Cursor(connection);
 	}
 
+    bool Connection::autocommit()     
+    {
+        return connection->autocommit();
+    }
+    
+    void Connection::autocommit(bool autocommitFlag)
+    {
+        connection->autocommit(autocommitFlag);
+    }
+
+    void Connection::commit()
+    {
+        connection->commit();
+    }
+
+
 	// ============ Cursor ========================
 
 	Cursor::~Cursor()

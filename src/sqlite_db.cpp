@@ -21,6 +21,40 @@ SqliteConnection::SqliteConnection(
 	/// @todo parsing and tuning addParams
 }
 
+
+bool SqliteConnection::autocommit() 
+{
+    return !!sqlite3_get_autocommit(db.get());
+}
+
+void SqliteConnection::autocommit(bool autocommitFlag) 
+{
+    // Do smth if status need to change
+    bool currentAutoCommit = autocommit();
+    if (currentAutoCommit && !autocommitFlag)
+    {
+    	sqlite3_stmt* pStmt;
+      	int rc = sqlite3_prepare_v2(db.get(), "BEGIN;", -1, &pStmt, nullptr);
+        rc = sqlite3_step(pStmt);
+    }
+    else if (!currentAutoCommit && autocommitFlag)
+    {
+    	sqlite3_stmt* pStmt;
+      	int rc = sqlite3_prepare_v2(db.get(), "COMMIT;", -1, &pStmt, nullptr);
+        rc = sqlite3_step(pStmt);
+    }
+}
+
+void SqliteConnection::commit() 
+{
+    if (!autocommit())
+    {
+    	sqlite3_stmt* pStmt;
+      	int rc = sqlite3_prepare_v2(db.get(), "COMMIT;", -1, &pStmt, nullptr);
+        rc = sqlite3_step(pStmt);
+    }
+}
+
 // =============== SqliteCursor =====================
 
 SqliteCursor::SqliteCursor(std::shared_ptr<sqlite3> db_)
