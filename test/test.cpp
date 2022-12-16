@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <iterator>
+#include <string>
 #include <dbpp.hpp>
 
 using namespace dbpp;
@@ -33,20 +34,16 @@ void f()
 
     auto cursor = connection.cursor();
     cursor.execute(sql_create_table);
-    std::cout <<  connection.autocommit() << " - autocommit status after create\n";
+    std::cout <<  connection.autocommit() << " - autocommit after create\n";
     connection.autocommit(false);
-    std::cout <<  connection.autocommit() << " - autocommit status before insert\n";
-    cursor.execute(sql_insert);
-    std::cout <<  connection.autocommit() << " - autocommit status after insert\n";
-    show_tab(cursor, "after INSERT before rollback");
-    connection.rollback();
-    show_tab(cursor, "after INSERT before commit");
-    cursor.execute(sql_insert);
-    connection.rollback();
-    std::cout <<  connection.autocommit() << " - autocommit status before commit\n";
+    std::cout <<  connection.autocommit() << " - autocommit before commit\n";
     connection.commit();
-    std::cout <<  connection.autocommit() << " - autocommit status after commit\n";
-    show_tab(cursor, "after INSERT after commit");
+    std::cout << connection.autocommit() << " - autocommit before insert\n";
+    cursor.execute(sql_insert);
+    show_tab(cursor, "after INSERT");
+    //cursor.execute(sql_insert);
+    //connection.rollback();
+    //std::cout <<  connection.autocommit() << " - autocommit status before commit\n";
     cursor.execute(sql_delete);
     show_tab(cursor, "after DELETE");
 }
@@ -73,6 +70,14 @@ void f()
 
 int main()
 {
+    std::cout << __DATE__ " " __TIME__ "  " << 
+#ifdef _MSC_VER
+        "MS:" << _MSC_VER
+#else
+        "GCC:" << __GNUC__
+#endif // _MSC_VER
+
+        <<"\n";
     try
     {
         f();
@@ -81,5 +86,6 @@ int main()
     {
         std::cout << "STD_EXCEPTION:\n" << err.what() << "\n";
     }
+    std::cout << ">>>>>>>>>>>>>>>\n";
     return 0;
 }

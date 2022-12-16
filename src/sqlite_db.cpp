@@ -33,36 +33,24 @@ void SqliteConnection::autocommit(bool autocommitFlag)
     bool currentAutoCommit = autocommit();
     if (currentAutoCommit && !autocommitFlag)
     {
-    	sqlite3_stmt* pStmt;
-      	int rc = sqlite3_prepare_v2(db.get(), "BEGIN", -1, &pStmt, nullptr);
-        rc = sqlite3_step(pStmt);
+        single_step("BEGIN");
     }
     else if (!currentAutoCommit && autocommitFlag)
     {
-    	sqlite3_stmt* pStmt;
-      	int rc = sqlite3_prepare_v2(db.get(), "COMMIT", -1, &pStmt, nullptr);
-        rc = sqlite3_step(pStmt);
+        single_step("COMMIT");
     }
 }
 
 void SqliteConnection::commit() 
 {
     if (!autocommit())
-    {
-    	sqlite3_stmt* pStmt;
-      	int rc = sqlite3_prepare_v2(db.get(), "COMMIT;", -1, &pStmt, nullptr);
-        rc = sqlite3_step(pStmt);
-    }
+        single_step("COMMIT");
 } 
 
 void SqliteConnection::rollback() 
 {
     if (!autocommit())
-    {
-    	sqlite3_stmt* pStmt;
-      	int rc = sqlite3_prepare_v2(db.get(), "ROLLBACK", -1, &pStmt, nullptr);
-        rc = sqlite3_step(pStmt);
-    }
+        single_step("ROLLBACK");
     /*
     if (!sqlite3_get_autocommit(self->db)) {
         int rc;
@@ -86,12 +74,10 @@ void SqliteConnection::rollback()
 */
 } 
 
-
-
 // =============== SqliteCursor =====================
 
 SqliteCursor::SqliteCursor(std::shared_ptr<sqlite3> db_)
-	: db(db_)
+	: BaseSqlite(db_)
 {
 }
 
@@ -181,4 +167,12 @@ void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
     }  // Cycle for all SQL single statements
 
     // FIXME check RC and throw exception
+}
+
+// ==== functions ====
+
+void finalize_with_check(sqlite3_stmt* stmt)
+{
+    // FIXME сделать с проверкой RC
+    int rc = sqlite3_finalize(stmt);
 }

@@ -35,10 +35,10 @@ namespace dbpp {
 	using BLOB = std::vector<char>;
 
 	/// Output cell from SQL SELECT operation
-	using ResutCell = std::variant<Null, int, double, String, BLOB>;
+	using ResultCell = std::variant<Null, int, double, String, BLOB>;
 
 	/// One result row of SELECT operation
-	using ResultRow = std::vector<ResutCell>;
+	using ResultRow = std::vector<ResultCell>;
 
 	/// Result of fetchmany/fetchall
 	using ResultTab = std::vector<ResultRow> ;
@@ -140,7 +140,7 @@ inline std::ostream& operator << (
 
 /// Simple realization cell's output
 inline std::ostream& operator << (
-	std::ostream& os, dbpp::ResutCell const& v)
+	std::ostream& os, dbpp::ResultCell const& v)
 {
 	std::visit([&](auto&& arg) {os << arg ; }, v);
 	return os;
