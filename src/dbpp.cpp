@@ -73,10 +73,7 @@ namespace dbpp
 	void Cursor::executemany(String const& query, 
 		InputTab const& input_data)
 	{
-		for (auto const& row : input_data)
-		{
-			cursor->execute(query, row);
-		}
+		cursor->executemany(query, input_data);
 	}
 
 	std::optional<ResultRow> Cursor::fetchone()

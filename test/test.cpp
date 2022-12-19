@@ -21,6 +21,13 @@ const std::string sql_insert_many("INSERT INTO PERSON VALUES(?, ?, ?, ?, ?, ?);"
 
 const std::string sql_select = "SELECT * from PERSON;";
 const std::string sql_delete = "DELETE from PERSON where ID=2;";
+const std::string sql_delete_s = "DELETE from PERSON where NAME=?;";
+
+const InputRow row1 = { 1, "STEVE", "GATES", 30, "PALO ALTO", 1000.0 };
+const InputRow row2 = { 2, "BILL", "ALLEN", 20, "SEATTLE", 300.22 };
+const InputRow row3 = { 3, "PAUL", "JOBS", 24, "SEATTLE", 9900 };
+const InputTab inputTab = {row1, row2, row3};
+
 
 void show_tab(Cursor &cursor, std::string const &comment="", std::string const &tabName="PERSON")
 {
@@ -34,17 +41,19 @@ void f()
 
     auto cursor = connection.cursor();
     cursor.execute(sql_create_table);
-    std::cout <<  connection.autocommit() << " - autocommit after create\n";
-    connection.autocommit(false);
-    std::cout <<  connection.autocommit() << " - autocommit before commit\n";
-    connection.commit();
-    std::cout << connection.autocommit() << " - autocommit before insert\n";
-    cursor.execute(sql_insert);
+    //std::cout <<  connection.autocommit() << " - autocommit after create\n";
+    //connection.autocommit(false);
+    //std::cout <<  connection.autocommit() << " - autocommit before commit\n";
+    //connection.commit();
+    //std::cout << connection.autocommit() << " - autocommit before insert\n";
+    
+    //cursor.execute(sql_insert);
+    cursor.executemany(sql_insert_many, inputTab);
     show_tab(cursor, "after INSERT");
     //cursor.execute(sql_insert);
     //connection.rollback();
     //std::cout <<  connection.autocommit() << " - autocommit status before commit\n";
-    cursor.execute(sql_delete);
+    cursor.execute(sql_delete_s, {"BILL"});
     show_tab(cursor, "after DELETE");
 }
 #endif // 0

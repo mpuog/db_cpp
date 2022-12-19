@@ -45,6 +45,20 @@ namespace dbpp
 			execute_impl(sql, row);
 		}
 
+		/// Simple universal implementation
+		/// @todo db specific implementation
+		virtual void executemany(String const& sql,
+			InputTab const& input_data)
+		{
+			resultTab.clear();
+			columns.clear();
+			for (auto const& row : input_data)
+			{
+				execute_impl(sql, row);
+			}
+		}
+
+
 		/// Simple implementation by reading from resutTab
 		/// @retval "empty" std::optional if all data recieved
 		virtual std::optional<ResultRow> fetchone()
