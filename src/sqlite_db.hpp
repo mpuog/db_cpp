@@ -4,8 +4,13 @@
 #include <functional>
 using namespace dbpp;
 
-void finalize_with_check(sqlite3_stmt* stmt);
+/// Deleter struct-function for sqlite3_stmt
+struct CheckFinalize 
+{
+	void operator() (sqlite3_stmt* stmt);
+};
 
+/// Common data/tools for sqlite connection and cursor
 class BaseSqlite
 {
 protected:
@@ -13,15 +18,18 @@ protected:
 	std::shared_ptr<sqlite3> db;
 
 	// ==== functions ====
-	std::shared_ptr<sqlite3_stmt> single_sqlite_stmt(std::string const& sql)
+
+	/// autofinalize pointer to single sql statement
+	std::unique_ptr<sqlite3_stmt, CheckFinalize> 
+		single_sqlite_stmt(std::string const& sql)
+
 	{
 		sqlite3_stmt* stmt;
 		int rc = sqlite3_prepare_v2(db.get(), sql.c_str(), int(sql.size() + 1), &stmt, nullptr);
 		if (rc != SQLITE_OK)
 			throw Error("Bad SQL");
 
-		//std::unique_ptr<sqlite3_stmt, std::function<void(sqlite3_stmt*)> > zz(stmt, finalize_with_check);
-		return std::shared_ptr<sqlite3_stmt>(stmt, finalize_with_check);
+		return std::unique_ptr<sqlite3_stmt, CheckFinalize> (stmt);
 	}
 
 	void single_step(std::string const& sql)
@@ -46,7 +54,7 @@ public:
 
 	SqliteCursor(std::shared_ptr<sqlite3> db);
 
-	void execute_impl(String const& query, InputRow const& data) override;
+	void execute_impl(String const& query, InputRow const& data) final;
 };
 
 

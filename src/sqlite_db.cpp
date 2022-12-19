@@ -136,7 +136,6 @@ void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
 		char** azVals = 0;
 		pStmt = nullptr;
 		rc = sqlite3_prepare_v2(db.get(), zSql, -1, &pStmt, &zLeftover);
-		//std::shared_ptr<sqlite3_stmt> stmtGuard = std::make_shared<sqlite3_stmt>(pStmt, sqlite3_finalize);
 		if (rc != SQLITE_OK) {
 			continue;
 		}
@@ -147,6 +146,51 @@ void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
 		}
 
 		// FIXME bind input data
+        if (int paramsCount = sqlite3_bind_parameter_count(pStmt))
+        {
+            if (paramsCount != data.size())
+            {
+                ; // fixme ошибка
+            }
+
+            for (int n = 0; n < paramsCount; n++)
+            {
+                const auto &datum = data[n];
+                switch (datum.index())
+                {
+                case 0:
+                    sqlite3_bind_null(pStmt, n + 1);
+                    break;
+                case 1:
+                    sqlite3_bind_int(pStmt, n + 1, std::get<int>(datum));
+                    break;
+                case 2:
+                    sqlite3_bind_double(pStmt, n + 1, std::get<double>(datum));
+                    break;
+                case 3:
+                {
+                    auto const& s = std::get<String>(datum);
+                    // FIXME is SQLITE_STATIC correct??? SQLITE_TRANSIENT safe but may be non effective
+                    sqlite3_bind_text(pStmt, n + 1, s.c_str(), (int)s.size(), SQLITE_TRANSIENT);
+                    break;
+                }
+                case 4:
+                {
+                    auto const& b = std::get<BLOB>(datum);
+                    // FIXME empty BLOB case
+                    sqlite3_bind_blob(pStmt, n + 1, &b.front(), b.size(), SQLITE_TRANSIENT);
+                    break;
+                }
+                    break;
+                default:
+                    break; // FIXME  ошибка
+                }
+
+
+
+            }
+        }
+
 		
 		// Cycle for result tab
 		for (;;)
@@ -169,9 +213,7 @@ void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
     // FIXME check RC and throw exception
 }
 
-// ==== functions ====
-
-void finalize_with_check(sqlite3_stmt* stmt)
+void CheckFinalize::operator()(sqlite3_stmt* stmt)
 {
     // FIXME сделать с проверкой RC
     int rc = sqlite3_finalize(stmt);
