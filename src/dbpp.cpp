@@ -1,6 +1,9 @@
 #include "common.hpp"
 #include "dummy_db.hpp"
 #include "sqlite_db.hpp"
+#ifdef DBPP_ODBC
+#include "odbc_db.hpp"
+#endif // DBPP_ODBC
 
 namespace dbpp
 {
@@ -8,13 +11,15 @@ namespace dbpp
 	{
 		switch (type)
 		{
-			//case dbpp::db::odbc:
-			//	break;
-			//case dbpp::db::mysql:
-			//	break;
+#ifdef DBPP_ODBC
+		case dbpp::db::odbc:
+			return Connection(new OdbcConnection(connectString));
+#endif // DBPP_ODBC
 		case db::sqlite:
 			return Connection(new SqliteConnection(
 				connectString, addParams));
+		//case dbpp::db::mysql:
+		//	break;  
 		default:
 			return Connection(new DummyConnection);
 		}

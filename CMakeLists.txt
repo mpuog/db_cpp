@@ -6,7 +6,14 @@ cmake_minimum_required (VERSION 3.8)
 project ("db_cmake")
 
 # Add source to this project's executable.
-add_executable (db_cmake  "src/dbpp.cpp" "test/test.cpp" "src/sqlite/sqlite3.c" "src/sqlite_db.cpp" "src/dummy_db.cpp")
+IF (NOT WIN32)
+    add_executable (db_cmake "test/test.cpp"
+    "src/dbpp.cpp" "src/sqlite/sqlite3.c" "src/sqlite_db.cpp" "src/dummy_db.cpp")
+ELSE()
+    add_executable (db_cmake  "test/test.cpp"
+    "src/dbpp.cpp" "src/odbc_db.cpp" "src/sqlite/sqlite3.c"   
+    "src/sqlite_db.cpp" "src/dummy_db.cpp")
+ENDIF()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_property(TARGET db_cmake PROPERTY CXX_STANDARD 17)

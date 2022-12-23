@@ -99,7 +99,7 @@ ResultRow SqliteCursor::GetRow(sqlite3_stmt* pStmt)
             break; }
         case SQLITE_BLOB: {
             int n = sqlite3_column_bytes(pStmt, i);
-            BLOB blob(n);
+            Blob blob(n);
             std::memcpy(&blob[0], sqlite3_column_blob(pStmt, i), n);
             row.push_back(std::move(blob));
             break; }
@@ -176,7 +176,7 @@ void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
                 }
                 case 4:
                 {
-                    auto const& b = std::get<BLOB>(datum);
+                    auto const& b = std::get<Blob>(datum);
                     // FIXME empty BLOB case
                     sqlite3_bind_blob(pStmt, n + 1, &b.front(), b.size(), SQLITE_TRANSIENT);
                     break;

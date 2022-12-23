@@ -1,5 +1,10 @@
 #pragma once
 
+#ifdef WIN32
+#define DBPP_ODBC
+#endif
+
+
 #include <vector>
 #include <variant>
 #include <optional>
@@ -22,7 +27,11 @@ namespace dbpp {
 	enum class db {
 		dummy,
 		sqlite,
-		//odbc, mysql, postgress ...
+#ifdef DBPP_ODBC
+		odbc,
+#endif // DBPP_ODBC
+
+		//mysql, postgress ...
 	};
 
 	/// Type NULL
@@ -32,10 +41,10 @@ namespace dbpp {
 	/// Type for string data
 	using String = std::string;  // string or utf8string???
 	/// Type for binary data
-	using BLOB = std::vector<char>;
+	using Blob = std::vector<char>;
 
 	/// Output cell from SQL SELECT operation
-	using ResultCell = std::variant<Null, int, double, String, BLOB>;
+	using ResultCell = std::variant<Null, int, double, String, Blob>;
 
 	/// One result row of SELECT operation
 	using ResultRow = std::vector<ResultCell>;
@@ -44,7 +53,7 @@ namespace dbpp {
 	using ResultTab = std::vector<ResultRow> ;
 
 	/// Input datum for SQL INSERT/UPDATE operation. 
-	using InputCell = std::variant<Null, int, double, String, BLOB>;
+	using InputCell = std::variant<Null, int, double, String, Blob>;
 
 	/// Input row for SQL INSERT/UPDATE operation
 	using InputRow = std::vector<InputCell>;
@@ -129,10 +138,10 @@ inline std::ostream &operator << (
 	return os << "NULL";
 }
 
-/// Realization BLOB's output
-/// @todo Now only print 'BLOB'
+/// Realization Blob's output
+/// @todo Now only print 'Blob'
 inline std::ostream& operator << (
-	std::ostream& os, dbpp::BLOB const&)
+	std::ostream& os, dbpp::Blob const&)
 {
 	return os << "BLOB";
 }
