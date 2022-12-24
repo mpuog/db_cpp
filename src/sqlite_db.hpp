@@ -49,12 +49,10 @@ class SqliteCursor : public BaseCursor, public BaseSqlite
     ResultRow GetRow(sqlite3_stmt* pStmt);
 public:
 
-	//virtual void callproc(string_t const& proc_name) override
-	//{		}
-
 	SqliteCursor(std::shared_ptr<sqlite3> db);
 
-	void execute_impl(String const& query, InputRow const& data) final;
+	int execute_impl(String const& query, InputRow const& data,
+		std::deque<ResultRow>& resultTab, ColumnsInfo& columnsInfo) final;
 };
 
 

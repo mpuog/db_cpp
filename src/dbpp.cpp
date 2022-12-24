@@ -1,6 +1,6 @@
 #include "common.hpp"
-#include "dummy_db.hpp"
 #include "sqlite_db.hpp"
+
 #ifdef DBPP_ODBC
 #include "odbc_db.hpp"
 #endif // DBPP_ODBC
@@ -21,10 +21,9 @@ namespace dbpp
 		//case dbpp::db::mysql:
 		//	break;  
 		default:
-			return Connection(new DummyConnection);
+			throw Error("Unknown db type");
 		}
 	}
-
 
 	// ============ Connection ========================
 
@@ -72,13 +71,13 @@ namespace dbpp
 
 	void Cursor::execute(String const& query, InputRow const& data)
 	{
-		cursor->execute(query, data);
+		rowcount_ = cursor->execute(query, data, columnsInfo);
 	}
 
 	void Cursor::executemany(String const& query, 
 		InputTab const& input_data)
 	{
-		cursor->executemany(query, input_data);
+		rowcount_ = cursor->executemany(query, input_data);
 	}
 
 	std::optional<ResultRow> Cursor::fetchone()
@@ -91,6 +90,22 @@ namespace dbpp
 		ResultTab rt;
 		while (auto row = fetchone())
 			rt.push_back(std::move(*row));
+		return rt;
+	}
+
+	ResultTab Cursor::fetchmany(int size)
+	{
+		if (-1 == size)
+			size = arraysize_;
+
+		ResultTab rt;
+		for (int i = 0; i < size; ++i)
+		{
+			auto row = fetchone();
+			if (!row)
+				break;
+			rt.push_back(std::move(*row));
+		}
 		return rt;
 	}
 

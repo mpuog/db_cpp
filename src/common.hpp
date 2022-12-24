@@ -27,35 +27,40 @@ namespace dbpp
 	protected:
 		BaseCursor() = default;
 
-		virtual void execute_impl(
-			String const& sql, InputRow const&) = 0;
-	public:
-        /// Data fo stupid method when select operator puts all data to resultTab.
-        /// Slow if select without restrictions on quantity, but not all data need later.
+		/// Data fo stupid method when select operator puts all data to resultTab.
+		/// Slow if select without restrictions on quantity, but not all data need later.
 		std::deque<ResultRow> resultTab;
-        /// Columns names
-		std::vector<String> columns;
+
+		virtual int execute_impl(
+			String const& sql, InputRow const&row,
+			std::deque<ResultRow> &resultTab, ColumnsInfo& columnsInfo) = 0;
+	public:
+
 		virtual 		~BaseCursor() {}
 		BaseCursor(BaseCursor&&) = default;
 
-		void execute(String const& sql, InputRow const &row)
+		int execute(String const& sql, InputRow const &row, 
+			ColumnsInfo &columnsInfo)
 		{
 			resultTab.clear();
-			columns.clear();
-			execute_impl(sql, row);
+			columnsInfo.clear();
+			int execute_return = execute_impl(sql, row, resultTab, columnsInfo);
+			return resultTab.empty() ? execute_return : (int)resultTab.size();
 		}
 
 		/// Simple universal implementation
-		/// @todo db specific implementation
-		virtual void executemany(String const& sql,
+		/// @todo db specific implementation with one time sql statement init
+		virtual int executemany(String const& sql, 
 			InputTab const& input_data)
 		{
 			resultTab.clear();
-			columns.clear();
+			ColumnsInfo columnsInfo;
+			int count = 0;
 			for (auto const& row : input_data)
 			{
-				execute_impl(sql, row);
+				count += execute_impl(sql, row, resultTab, columnsInfo);
 			}
+			return count;
 		}
 
 

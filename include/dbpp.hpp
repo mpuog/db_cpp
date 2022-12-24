@@ -1,5 +1,7 @@
 #pragma once
 
+// ODBC always available on windows
+// TODO implement or link to unixODBC  
 #ifdef WIN32
 #define DBPP_ODBC
 #endif
@@ -19,9 +21,11 @@ namespace dbpp {
 	class Error : public std::runtime_error
 	{
 	public:
-		Error(std::string const& message) : std::runtime_error(message)
+		explicit Error(std::string const& message) : std::runtime_error(message)
 		{}
 	};
+
+	// TODO various special exceptions
 
 	/// Various types of db
 	enum class db {
@@ -30,8 +34,7 @@ namespace dbpp {
 #ifdef DBPP_ODBC
 		odbc,
 #endif // DBPP_ODBC
-
-		//mysql, postgress ...
+		//mysql, postgress, etc.
 	};
 
 	/// Type NULL
@@ -66,32 +69,54 @@ namespace dbpp {
 	/// Inner connection interface
 	class BaseConnection;
 
-	/// Cursor
+	struct OneColumnInfo
+	{
+		String name;
+		// TODO other fields according to PEP 249
+	};
+
+    using ColumnsInfo = std::vector<OneColumnInfo>;
+
+	/// db cursor
 	class Cursor {
 		BaseCursor *cursor = nullptr;
 		friend class Connection;
+        ColumnsInfo columnsInfo;
+		int rowcount_ = -1;
+		unsigned arraysize_ = 1;
+
 		Cursor(std::shared_ptr<BaseConnection> connection_);
+
 	public:
+
 		Cursor() = delete;
 		Cursor(Cursor const&) = delete;
 		Cursor& operator = (Cursor const&) = delete;
 		~Cursor();
 
-		//virtual void close() = 0;
-		// read-only properties???
-		String name = "";
-		int type_code = 0;
-		int rowcount = -1;
-		// read/write property
-		unsigned arraysize = 1;
+        int rowcount() const {
+			return rowcount_; }
+		unsigned arraysize() const { 
+			return arraysize_; }
+		void arraysize(unsigned newsize) { 
+			arraysize_ = newsize; }
+		// TODO virtual void close() = 0;
 
 		void execute(String const& query, InputRow const& data = {});
+
+		ColumnsInfo const& description() const
+		{
+			return columnsInfo;
+		}
+
 		void executemany(String const& query, 
 			InputTab const& input_data);
 		//virtual void callproc(string_t const& proc_name) = 0; // ??
 		std::optional<dbpp::ResultRow> fetchone();
 		ResultTab fetchall();
+		ResultTab fetchmany(int size=-1);
 
+        /// Rewrite sql result to some receiver
         template <class out_iterator>
 		unsigned fetchall(out_iterator oi)
 		{
@@ -103,8 +128,12 @@ namespace dbpp {
 			}
 			return n;
 		}
+
+        // TODO ? void setinputsizes(sizes)
+        // TODO ? void setoutputsize(size [, column]))
 	};
 
+	/// db connection
 	class Connection
 	{
 		//Cursor def_cursor; //  ??
@@ -119,17 +148,30 @@ namespace dbpp {
         void autocommit(bool autocommitFlag);
         void commit();  
         void rollback();
-		//  close(); 
+		// void close(); 
+    	// int threadsafety();  // global method in PEP 249
+	    // std::string paramstyle()  // global method in PEP 249
 
 		/// Create connection to db
-		/// @param connectString : Main db param. Name db for sqlite, conect string for ODBC, etc.
+		/// @param type : kind of db (odbc, sqlite, etc.) 
+		/// @param connectString : Main db param. Name db for sqlite, connect string for ODBC, etc.
 		/// @param addParams : Addtitional params in syntax name1=value1;name2=value2,... 
 		///                    Similar to additional params in python's sqlite3.connect() function. 
 		///                    Params are specific for each db type and is absond for ODBC 
 		static Connection connect(db type, std::string const& connectString, std::string const& addParams = "");
-	};
+	};  // class Connection
+
+    // =============== functions ======================
+
+    // inline float apilevel() { return 2.0; }
+
+	inline Connection comnnect(db type, std::string const& connectString, std::string const& addParams = "")
+	{
+		return Connection::connect(type, connectString, addParams);
+	}
 
 };  // namespace dbpp 
+
 
 /// Realization NULL's output
 inline std::ostream &operator << (

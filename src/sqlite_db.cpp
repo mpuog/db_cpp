@@ -119,7 +119,8 @@ ResultRow SqliteCursor::GetRow(sqlite3_stmt* pStmt)
 }
 
 
-void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
+int SqliteCursor::execute_impl(String const& sql, InputRow const& data, 
+    std::deque<ResultRow>& resultTab, ColumnsInfo& columnsInfo)
 {
 	const char* zSql = sql.c_str();
 	int rc = SQLITE_OK;         /* Return code */
@@ -178,7 +179,7 @@ void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
                 {
                     auto const& b = std::get<Blob>(datum);
                     // FIXME empty BLOB case
-                    sqlite3_bind_blob(pStmt, n + 1, &b.front(), b.size(), SQLITE_TRANSIENT);
+                    sqlite3_bind_blob(pStmt, n + 1, &b.front(), (int)b.size(), SQLITE_TRANSIENT);
                     break;
                 }
                     break;
@@ -198,11 +199,14 @@ void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
 			rc = sqlite3_step(pStmt);
 			if (rc != SQLITE_ROW)
 				break;
-			if (columns.empty())  // fill columns names in first step
+			if (columnsInfo.empty())  // fill columns names in first step
 			{
 				int nCol = sqlite3_column_count(pStmt);
-				for (int i = 0; i < nCol; i++) 
-					columns.emplace_back(sqlite3_column_name(pStmt, i));
+                for (int i = 0; i < nCol; i++)
+                {
+                    OneColumnInfo oki = { sqlite3_column_name(pStmt, i) };
+                    columnsInfo.push_back(oki);
+                }
 			}
 			resultTab.push_back(std::move(GetRow(pStmt)));
 		}
@@ -211,6 +215,7 @@ void SqliteCursor::execute_impl(String const& sql, InputRow const& data)
     }  // Cycle for all SQL single statements
 
     // FIXME check RC and throw exception
+    return -1;
 }
 
 void CheckFinalize::operator()(sqlite3_stmt* stmt)
