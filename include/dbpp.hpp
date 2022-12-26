@@ -165,7 +165,7 @@ namespace dbpp {
 
     // inline float apilevel() { return 2.0; }
 
-	inline Connection comnnect(db type, std::string const& connectString, std::string const& addParams = "")
+	inline Connection connect(db type, std::string const& connectString, std::string const& addParams = "")
 	{
 		return Connection::connect(type, connectString, addParams);
 	}

@@ -11,33 +11,66 @@ class BaseOdbc
 {
 };
 
-class OdbcCursor : public BaseCursor, public BaseOdbc
+class SqlHandle
 {
+	SQLHANDLE handle = SQL_NULL_HANDLE;
+	SQLSMALLINT handleType;
 public:
-	OdbcCursor() = default;
 
-	int execute_impl(String const& query, InputRow const& data,
-		std::deque<ResultRow>& resultTab, ColumnsInfo &columnsInfo) final
+	SqlHandle(SqlHandle const&) = delete;
+	SqlHandle& operator = (SqlHandle const&) = delete;
+
+	/// to create empty object before SQLAllocHand
+	explicit SqlHandle(SQLSMALLINT handleType_)
+		: handleType(handleType_) 
+	{}
+
+	~SqlHandle()
 	{
-		resultTab = { { null, 21}, {"qu-qu", null} };
-		return -1;
+		if (handle) // if initialized
+			SQLFreeHandle(handleType, handle);
 	}
+
+	SQLHANDLE * operator &()
+	{
+		return &handle;
+	}
+
+	operator SQLHANDLE () 
+	{
+		return handle;
+	}
+
 };
 
 
 class OdbcConnection : public BaseConnection, public BaseOdbc
 {
-	SQLHDBC h;
+	friend class ObbcCursor;
+public:
+
+	SqlHandle hEnv;
+	SqlHandle hDbc;
 public:
 
 	OdbcConnection(std::string const& connectString);
-	OdbcConnection(OdbcConnection&&) = default;
+	~OdbcConnection() = default;
 
 	// Inherited via BaseConnection
-	virtual BaseCursor* cursor() final
+	BaseCursor* cursor() final;
+};
+
+class OdbcCursor : public BaseCursor, public BaseOdbc
+{
+	OdbcConnection& connection;
+public:
+	explicit OdbcCursor(OdbcConnection& connection_)
+		: connection(connection_)
 	{
-		return new OdbcCursor;
+
 	}
 
+	int execute_impl(String const& query, InputRow const& data,
+		std::deque<ResultRow>& resultTab, ColumnsInfo& columnsInfo) final;
 };
 

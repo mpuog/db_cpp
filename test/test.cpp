@@ -20,11 +20,15 @@ const InputRow row1 = { 1, "STEVE", 30, 1000.0 };
 const InputRow row2 = { 2, "BILL", 20, 300.22 };
 const InputRow row3 = { 3, "PAUL", 24, 9900 };
 const InputTab inputTab = { row1, row2, row3 };
+const std::string sql_insert_1 =
+    "INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0);";
+const std::string sql_insert_2 = 
+    "INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22);";
+const std::string sql_insert_3 = 
+    "INSERT INTO PERSON VALUES(3, 'PAUL', 24, 9900.0);";
 
-const std::string sqlite_insert(
-    "INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0);"
-    "INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22);"
-    "INSERT INTO PERSON VALUES(3, 'PAUL', 24, 9900.0);");
+const std::string sql_insert_n =
+    sql_insert_1 + sql_insert_1 + sql_insert_1;
 
 void show_tab(Cursor& cursor, std::string const& comment = "", std::string const& tabName = "PERSON")
 {
@@ -36,25 +40,33 @@ void show_tab(Cursor& cursor, std::string const& comment = "", std::string const
 }
 
 
-#if 0
+#if 1
 // sqlite-odbc
 // 
 
 void f()
 {
-    auto connection = Connection::connect(db::odbc, 
-        "Driver={SQLite3 ODBC Driver};Database=:memory:");
+    auto connection = connect(db::odbc, 
+        "Driver={SQLite3 ODBC Driver};Database="
+        /*
+        "test.db");
+        /*/
+        ":memory:");
+        //*/
 
     auto cursor = connection.cursor();
     cursor.execute(sqlite_create_table);
-    cursor.executemany(sql_insert_many, inputTab);
+    //cursor.execute(sql_insert_1);
+    //cursor.execute(sql_insert_2);
+    //cursor.execute(sql_insert_3);
+    //cursor.executemany(sql_insert_many, inputTab);
     show_tab(cursor, "after INSERT");
-    cursor.execute(sql_delete_s, { "BILL" });
-    show_tab(cursor, "after DELETE");
+    //cursor.execute(sql_delete_s, { "BILL" });
+    //show_tab(cursor, "after DELETE");
 }
 #endif // 0
 
-#if 1
+#if 0
 // sqlite 
 // 
 
