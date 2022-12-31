@@ -40,7 +40,7 @@ void show_tab(Cursor& cursor, std::string const& comment = "", std::string const
 }
 
 
-#if 1
+#if 0
 // sqlite-odbc
 // 
 
@@ -48,25 +48,26 @@ void f()
 {
     auto connection = connect(db::odbc, 
         "Driver={SQLite3 ODBC Driver};Database="
-        /*
+        //*
         "test.db");
         /*/
         ":memory:");
         //*/
 
-    //auto cursor = connection.cursor();
+    auto cursor = connection.cursor();
     //cursor.execute(sqlite_create_table);
-    //cursor.execute(sql_insert_1);
-    //cursor.execute(sql_insert_2);
-    //cursor.execute(sql_insert_3);
+    // cursor.execute(sql_insert_1);
+    // cursor.execute(sql_insert_2);
+    // cursor.execute(sql_insert_3);
     //cursor.executemany(sql_insert_many, inputTab);
-    //show_tab(cursor, "after INSERT");
+    // cursor.execute("SELECT * from PERSON");
+    show_tab(cursor, "after INSERT");
     //cursor.execute(sql_delete_s, { "BILL" });
     //show_tab(cursor, "after DELETE");
 }
-#endif // 0
 
-#if 0
+#else
+
 // sqlite 
 // 
 
@@ -154,9 +155,13 @@ int main()
     {
         f();
     }
+    catch (const Error &err)
+    {
+        std::cout << "DBPP_EXCEPTION:" << err.what() << "\n";
+    }
     catch (const std::exception &err)
     {
-        std::cout << "STD_EXCEPTION:\n" << err.what() << "\n";
+        std::cout << "STD_EXCEPTION:" << err.what() << "\n";
     }
     std::cout << ">>>>>>>>>>>>>>>\n";
     return 0;

@@ -35,7 +35,6 @@ void HandleDiagnosticRecord(SQLHANDLE      hHandle,
     WCHAR       wszMessage[1000];
     WCHAR       wszState[SQL_SQLSTATE_SIZE + 1];
 
-
     if (RetCode == SQL_INVALID_HANDLE)
     {
         fwprintf(stderr, L"Invalid handle!\n");
