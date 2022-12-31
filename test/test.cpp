@@ -54,13 +54,13 @@ void f()
         ":memory:");
         //*/
 
-    auto cursor = connection.cursor();
-    cursor.execute(sqlite_create_table);
+    //auto cursor = connection.cursor();
+    //cursor.execute(sqlite_create_table);
     //cursor.execute(sql_insert_1);
     //cursor.execute(sql_insert_2);
     //cursor.execute(sql_insert_3);
     //cursor.executemany(sql_insert_many, inputTab);
-    show_tab(cursor, "after INSERT");
+    //show_tab(cursor, "after INSERT");
     //cursor.execute(sql_delete_s, { "BILL" });
     //show_tab(cursor, "after DELETE");
 }

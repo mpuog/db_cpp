@@ -11,6 +11,36 @@ class BaseOdbc
 {
 };
 
+typedef struct STR_BINDING {
+    SQLSMALLINT         cDisplaySize;           /* size to display  */
+    WCHAR* wszBuffer;             /* display buffer   */
+    SQLLEN              indPtr;                 /* size or null     */
+    BOOL                fChar;                  /* character col?   */
+    struct STR_BINDING* sNext;                 /* linked list      */
+} BINDING;
+
+/*******************************************/
+/* Macro to call ODBC functions and        */
+/* report an error on failure.             */
+/* Takes handle, handle type, and stmt     */
+/*******************************************/
+#if 1
+#define TRYODBC(h, ht, x)
+#else
+#define TRYODBC(h, ht, x)   {   RETCODE rc = x;\
+                                if (rc != SQL_SUCCESS) \
+                                { \
+                                    HandleDiagnosticRecord (h, ht, rc); \
+                                } \
+                                if (rc == SQL_ERROR) \
+                                { \
+                                    fwprintf(stderr, L"Error in " L#x L"\n"); \
+                                    throw Error("*");  \
+                                }  \
+                            }
+
+#endif
+
 class SqlHandle
 {
 	SQLHANDLE handle = SQL_NULL_HANDLE;
