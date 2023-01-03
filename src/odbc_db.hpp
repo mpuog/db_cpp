@@ -115,13 +115,12 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 
 	int get_execute_result(SqlHandle &hStmt, SQLSMALLINT numResults,
 						   std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo);
-	void fill_columns_info(SqlHandle &hStmt, DWORD cDisplaySize, BINDING *pBinding, ColumnsInfo &columnsInfo);
+	ResultRow get_row(SqlHandle &hStmt, SQLSMALLINT numCols);
 
 public:
 	explicit OdbcCursor(OdbcConnection& connection_)
 		: connection(connection_)
 	{
-
 	}
 
 	int execute_impl(String const& query, InputRow const& data,

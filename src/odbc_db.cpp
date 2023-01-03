@@ -103,149 +103,42 @@ BaseCursor* OdbcConnection::cursor()
 
 //  ================= OdbcCursor =====
 
+ResultRow OdbcCursor::get_row(SqlHandle &hStmt, SQLSMALLINT numCols)
+{
+    ResultRow row;
+    for (SQLUSMALLINT i = 1; i <= numCols; i++) 
+    {
+        SQLLEN indicator;
+        char buf[512];
+        /* FIXME obtain different types instead of retrieve column data as a string */
+        RETCODE RetCode = SQLGetData(hStmt, i, SQL_C_CHAR, buf, sizeof(buf), &indicator);
+        if (SQL_SUCCEEDED(RetCode)) 
+        {
+            /* Handle null columns */
+            if (indicator == SQL_NULL_DATA) 
+                row.emplace_back(null);
+            else
+                row.emplace_back(String(buf));
+        }
+    }
+
+    return row;
+}
+
+
 int OdbcCursor::get_execute_result(SqlHandle &hStmt, SQLSMALLINT cCols,
                                    std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo)
 {
-    BINDING* pFirstBinding, * pThisBinding;
-    SQLSMALLINT     cDisplaySize;
     RETCODE         RetCode = SQL_SUCCESS;
-    int             iCount = 0;
 
-    // Allocate memory for each column
+    // FIXME fill columns names 
 
-    AllocateBindings(hStmt, cCols, &pFirstBinding, &cDisplaySize);
+    while (SQL_SUCCEEDED(RetCode = SQLFetch(hStmt))) 
+        resultTab.push_back(get_row(hStmt, cCols));
 
-    // Set the display mode and write the titles
-
-    DisplayTitles(hStmt, cDisplaySize + 1, pFirstBinding);
-
-    return -1;
-    // Fetch and display the data
-
-    bool fNoData = false;
-
-    do {
-        // Fetch a row
-
-        if (iCount++ >= gHeight - 2)
-        {
-            int     nInputChar;
-            bool    fEnterReceived = false;
-
-            while (!fEnterReceived)
-            {
-                wprintf(L"              ");
-                SetConsole(cDisplaySize + 2, TRUE);
-                wprintf(L"   Press ENTER to continue, Q to quit (height:%hd)", gHeight);
-                SetConsole(cDisplaySize + 2, FALSE);
-
-                nInputChar = _getch();
-                wprintf(L"\n");
-                if ((nInputChar == 'Q') || (nInputChar == 'q'))
-                {
-                    goto Exit;
-                }
-                else if ('\r' == nInputChar)
-                {
-                    fEnterReceived = true;
-                }
-                // else loop back to display prompt again
-            }
-
-            iCount = 1;
-            DisplayTitles(hStmt, cDisplaySize + 1, pFirstBinding);
-        }
-
-        TRYODBC(hStmt, SQL_HANDLE_STMT, RetCode = SQLFetch(hStmt));
-
-        if (RetCode == SQL_NO_DATA_FOUND)
-        {
-            fNoData = true;
-        }
-        else
-        {
-
-            // Display the data.   Ignore truncations
-
-            for (pThisBinding = pFirstBinding;
-                pThisBinding;
-                pThisBinding = pThisBinding->sNext)
-            {
-                if (pThisBinding->indPtr != SQL_NULL_DATA)
-                {
-                    wprintf(pThisBinding->fChar ? DISPLAY_FORMAT_C : DISPLAY_FORMAT,
-                        PIPE,
-                        pThisBinding->cDisplaySize,
-                        pThisBinding->cDisplaySize,
-                        pThisBinding->wszBuffer);
-                }
-                else
-                {
-                    wprintf(DISPLAY_FORMAT_C,
-                        PIPE,
-                        pThisBinding->cDisplaySize,
-                        pThisBinding->cDisplaySize,
-                        L"<NULL>");
-                }
-            }
-            wprintf(L" %c\n", PIPE);
-        }
-    } while (!fNoData);
-
-    SetConsole(cDisplaySize + 2, TRUE);
-    wprintf(L"%*.*s", cDisplaySize + 2, cDisplaySize + 2, L" ");
-    SetConsole(cDisplaySize + 2, FALSE);
-    wprintf(L"\n");
-
-Exit:
-    // Clean up the allocated buffers
-
-    while (pFirstBinding)
-    {
-        pThisBinding = pFirstBinding->sNext;
-        free(pFirstBinding->wszBuffer);
-        free(pFirstBinding);
-        pFirstBinding = pThisBinding;
-    }
-
-    //DisplayResults(hStmt, numResults);
     return -1;
 }
 
-void OdbcCursor::fill_columns_info(SqlHandle &hStmt, DWORD cDisplaySize, BINDING *pBinding, ColumnsInfo &columnsInfo)
-{
-    PRINT1(cDisplaySize)
-    return;
-    WCHAR           wszTitle[DISPLAY_MAX];
-    SQLSMALLINT     iCol = 1;
-
-    SetConsole(cDisplaySize + 2, TRUE);
-
-    for (; pBinding; pBinding = pBinding->sNext)
-    {
-        TRYODBC(hStmt,
-            SQL_HANDLE_STMT,
-            SQLColAttribute(hStmt,
-                iCol++,
-                SQL_DESC_NAME,
-                wszTitle,
-                sizeof(wszTitle), // Note count of bytes!
-                NULL,
-                NULL));
-
-        wprintf(DISPLAY_FORMAT_C,
-            PIPE,
-            pBinding->cDisplaySize,
-            pBinding->cDisplaySize,
-            wszTitle);
-    }
-
-Exit:
-
-    wprintf(L" %c", PIPE);
-    SetConsole(cDisplaySize + 2, FALSE);
-    wprintf(L"\n");
-}
 
 int OdbcCursor::execute_impl(String const &query, InputRow const &data,
                              std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo)
@@ -255,6 +148,8 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
     //     SQLAllocHandle(SQL_HANDLE_STMT, connection.hDbc, &hStmt));
     SqlHandle CONSTRUCT_HANDLE_WITH_TYPE(hStmt, SQL_HANDLE_STMT, connection.hDbc);
     SQLSMALLINT numResults;
+
+    // FIXME processing InputRow const &data
 
     RETCODE retCode = SQLExecDirectA(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
     PRINT1(retCode)
