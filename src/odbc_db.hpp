@@ -36,6 +36,8 @@ public:
 
 	SqlHandle(SqlHandle const&) = delete;
 	SqlHandle& operator = (SqlHandle const&) = delete;
+	SqlHandle(SqlHandle &&) = delete;
+	SqlHandle& operator = (SqlHandle &&);
 
 	/// to create empty object before SQLAllocHand
 	explicit SqlHandle(SQLSMALLINT handleType_)
@@ -112,6 +114,7 @@ public:
 class OdbcCursor : public BaseCursor, public BaseOdbc
 {
 	OdbcConnection& connection;
+    SqlHandle hStmt;	
 
 	int get_execute_result(SqlHandle &hStmt, SQLSMALLINT numResults,
 						   std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo);
@@ -119,7 +122,7 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 
 public:
 	explicit OdbcCursor(OdbcConnection& connection_)
-		: connection(connection_)
+		: connection(connection_), hStmt(SQL_HANDLE_STMT)
 	{
 	}
 

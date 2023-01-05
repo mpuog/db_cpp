@@ -132,6 +132,7 @@ int OdbcCursor::get_execute_result(SqlHandle &hStmt, SQLSMALLINT cCols,
     RETCODE         RetCode = SQL_SUCCESS;
 
     // FIXME fill columns names 
+    // SQLColumns
 
     while (SQL_SUCCEEDED(RetCode = SQLFetch(hStmt))) 
         resultTab.push_back(get_row(hStmt, cCols));
@@ -143,10 +144,10 @@ int OdbcCursor::get_execute_result(SqlHandle &hStmt, SQLSMALLINT cCols,
 int OdbcCursor::execute_impl(String const &query, InputRow const &data,
                              std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo)
 {
-    // TRYODBC(connection.hDbc,
-    //     SQL_HANDLE_DBC,
-    //     SQLAllocHandle(SQL_HANDLE_STMT, connection.hDbc, &hStmt));
-    SqlHandle CONSTRUCT_HANDLE_WITH_TYPE(hStmt, SQL_HANDLE_STMT, connection.hDbc);
+    // execute resets hStmt 
+    hStmt = SqlHandle(SQL_HANDLE_STMT);
+    CheckResultCode(hStmt, SQLAllocHandle(SQL_HANDLE_STMT, connection.hDbc, &hStmt));
+
     SQLSMALLINT numResults;
 
     // FIXME processing InputRow const &data
@@ -175,17 +176,10 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
         else
         {
             SQLLEN cRowCount;
-
             //TRYODBC(hStmt, SQL_HANDLE_STMT,SQLRowCount(hStmt, &cRowCount));
             CheckResultCode(hStmt, SQLRowCount(hStmt, &cRowCount));
             PRINT1(cRowCount)
-
-            if (cRowCount >= 0)
-            {
-                wprintf(L"%Id %s affected\n",
-                    cRowCount,
-                    cRowCount == 1 ? L"row" : L"rows");
-            }
+            return cRowCount;
         }
         break;
     }
@@ -200,8 +194,25 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
     return -1;
 }
 
-ErrorODBC::ErrorODBC(std::string const &message, RETCODE retCode)
-    : Error(message)
+std::string format_message_with_code(std::string const &message, RETCODE retCode)
 {
-    // FIXME formattimg with retCode
+    std::ostringstream oss;
+    // TODO code texts
+    oss << "Code " << retCode << ":\n" << message;
+    return oss.str();
+}
+
+
+ErrorODBC::ErrorODBC(std::string const &message, RETCODE retCode)
+    : Error(format_message_with_code(message, retCode))
+{
+}
+
+SqlHandle &SqlHandle::operator=(SqlHandle &&other)
+{
+    this->~SqlHandle();
+    handle = other.handle;
+	handleType = other.handleType;
+    other.handle = SQL_NULL_HANDLE;
+    return *this;
 }
