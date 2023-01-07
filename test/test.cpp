@@ -40,7 +40,7 @@ void show_tab(Cursor& cursor, std::string const& comment = "", std::string const
 }
 
 
-#if 1
+#if 0
 // sqlite-odbc
 // 
 
@@ -162,6 +162,6 @@ int main()
     {
         std::cout << "STD_EXCEPTION:" << err.what() << "\n";
     }
-    std::cout << ">>>>>>>>>>>>>>>\n";
+    std::cout << "||>>>>>>>>>>>>>>\n";
     return 0;
 }
