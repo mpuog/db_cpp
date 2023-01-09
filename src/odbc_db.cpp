@@ -44,52 +44,15 @@ std::string GetDiagnostic(SqlHandle &handle, RETCODE retCode)
     return sMsg.str();
 }
 
-    const SHORT   gHeight = 80;       // Users screen height
-#define DISPLAY_MAX 50          // Arbitrary limit on column width to display
-#define DISPLAY_FORMAT_EXTRA 3  // Per column extra display bytes (| <data> )
-#define DISPLAY_FORMAT      L"%c %*.*s "
-#define DISPLAY_FORMAT_C    L"%c %-*.*s "
-#define NULL_SIZE           6   // <NULL>
-#define SQL_QUERY_SIZE      1000 // Max. Num characters for SQL Query passed in.
-
-#define PIPE                L'|'
-
 //  ================= OdbcConnection =====
 
 OdbcConnection::OdbcConnection(std::string const& connectString)
     : CONSTRUCT_HANDLE_WITH_TYPE(hEnv, SQL_HANDLE_ENV, SQL_NULL_HANDLE)
     , hDbc(SQL_HANDLE_DBC)
 {
-    // Allocate an environment
-    
-    // if (SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv) == SQL_ERROR)
-    //     throw Error("Unable to allocate ODBC environment handle\n");
-
-    // Register this as an application that expects 3.x behavior,
-    // you must register something if you use AllocHandle
-    // TRYODBC(hEnv,
-    //     SQL_HANDLE_ENV,
-    //     SQLSetEnvAttr(hEnv,
-    //         SQL_ATTR_ODBC_VERSION,
-    //         (SQLPOINTER)SQL_OV_ODBC3,
-    //         0));
-    CheckResultCode(hEnv, SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3,0));
-    
-    // Allocate a connection 
-    // TRYODBC(hEnv, SQL_HANDLE_ENV, SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDbc));
+    CheckResultCode(hEnv, SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION,
+        (SQLPOINTER)SQL_OV_ODBC3, 0));
     CheckResultCode(hEnv, SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDbc));
-
-    // Connect to the driver.  Use the connection string 
-    // TRYODBC(hDbc,
-    //     SQL_HANDLE_DBC,
-    //     SQLDriverConnectA(hDbc,
-    //         NULL,
-    //         (SQLCHAR*)connectString.c_str(),
-    //         SQL_NTS,
-    //         NULL,
-    //         0,
-    //         NULL,
-    //         SQL_DRIVER_COMPLETE));
 
     CheckResultCode(hEnv, SQLDriverConnectA(
                               hDbc, NULL, (SQLCHAR *)connectString.c_str(), 
@@ -103,7 +66,7 @@ BaseCursor* OdbcConnection::cursor()
 
 //  ================= OdbcCursor =====
 
-ResultRow OdbcCursor::get_row(SqlHandle &hStmt, SQLSMALLINT numCols)
+ResultRow OdbcCursor::get_row(SQLSMALLINT numCols)
 {
     ResultRow row;
     for (SQLUSMALLINT i = 1; i <= numCols; i++) 
@@ -126,16 +89,43 @@ ResultRow OdbcCursor::get_row(SqlHandle &hStmt, SQLSMALLINT numCols)
 }
 
 
-int OdbcCursor::get_execute_result(SqlHandle &hStmt, SQLSMALLINT cCols,
-                                   std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo)
+void OdbcCursor::get_columns_data(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)
+{
+    // fill external and inernal arrays columns info
+    columnsInfo.clear();
+    columnsInfoODBC.clear();
+
+    for (SQLUSMALLINT nCol = 1; nCol <= numResults; ++nCol)
+    {
+        const int bufferSize = 1024;
+        char buffer[bufferSize];
+        SQLRETURN retCode;
+        SQLSMALLINT bufferLenUsed;
+        SQLLEN NumericAttributePtr;
+        retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_LABEL, 
+            (SQLPOINTER)buffer, (SQLSMALLINT)bufferSize, &bufferLenUsed, NULL);
+
+        columnsInfo.push_back({ buffer });
+
+        // SQL_DESC_TYPE ?
+        SQLLEN columnType;
+        retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_CONCISE_TYPE,
+            NULL, 0, NULL, &columnType);
+        retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_TYPE_NAME,
+            (SQLPOINTER)buffer, (SQLSMALLINT)bufferSize, &bufferLenUsed, NULL);
+
+        columnsInfoODBC.push_back({ columnType, buffer });
+    }
+}
+
+
+int OdbcCursor::get_execute_result(SQLSMALLINT cCols,
+                                   std::deque<ResultRow> &resultTab)
 {
     RETCODE         RetCode = SQL_SUCCESS;
 
-    // FIXME fill columns names 
-    // SQLColumns
-
     while (SQL_SUCCEEDED(RetCode = SQLFetch(hStmt))) 
-        resultTab.push_back(get_row(hStmt, cCols));
+        resultTab.push_back(get_row(cCols));
 
     return -1;
 }
@@ -145,7 +135,7 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
                              std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo)
 {
     // execute resets hStmt 
-    hStmt = SqlHandle(SQL_HANDLE_STMT);
+    hStmt.~SqlHandle();
     CheckResultCode(hStmt, SQLAllocHandle(SQL_HANDLE_STMT, connection.hDbc, &hStmt));
 
     SQLSMALLINT numResults;
@@ -171,7 +161,8 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
         PRINT1(numResults)
         if (numResults > 0)
         {
-            return get_execute_result(hStmt, numResults, resultTab, columnsInfo);
+            get_columns_data(numResults, columnsInfo);
+            return get_execute_result(numResults, resultTab);
         }
         else
         {

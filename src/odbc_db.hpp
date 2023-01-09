@@ -8,21 +8,6 @@ using namespace dbpp;
 
 #define PRINT1(v) std::cout << #v << "="<< v << "\n";
 
-typedef struct STR_BINDING {
-    SQLSMALLINT         cDisplaySize;           /* size to display  */
-    WCHAR* wszBuffer;             /* display buffer   */
-    SQLLEN              indPtr;                 /* size or null     */
-    BOOL                fChar;                  /* character col?   */
-    struct STR_BINDING* sNext;                 /* linked list      */
-} BINDING;
-
-
-//void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCode);
-void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING **ppBinding, SQLSMALLINT *pDisplay);
-void SetConsole(DWORD dwDisplaySize, BOOL fInvert);
-void DisplayTitles(HSTMT hStmt, DWORD cDisplaySize, BINDING *pBinding);
-void DisplayResults(HSTMT hStmt, SQLSMALLINT cCols);
-
 /// Common data/tools for ODBC connection and cursor
 class BaseOdbc
 {
@@ -54,7 +39,10 @@ public:
 	~SqlHandle()
 	{
 		if (handle) // if initialized
+		{
 			SQLFreeHandle(handleType, handle);
+			handle = SQL_NULL_HANDLE;
+		}
 	}
 
 	SQLHANDLE * operator &() {
@@ -77,29 +65,10 @@ std::string GetDiagnostic(SqlHandle &handle, RETCODE retCode);
 
 void CheckResultCode(SqlHandle &h, RETCODE rc, std::string const& errMsg="Error");
 
-/* Macro to call ODBC functions and report an error on failure. Takes handle, handle type, and stmt */
-#if 1
-#define TRYODBC(h, ht, x)
-#else
-#define TRYODBC(h, ht, x)   {   RETCODE rc = x;\
-                                if (rc != SQL_SUCCESS) \
-                                { \
-                                    HandleDiagnosticRecord (h, ht, rc); \
-                                } \
-                                if (rc == SQL_ERROR) \
-                                { \
-                                    //fwprintf(stderr, L"Error in " L#x L"\n"); \
-                                    throw Error("*");  \
-                                }  \
-                            }
-#endif
-
-
 class OdbcConnection : public BaseConnection, public BaseOdbc
 {
 	friend class ObbcCursor;
 public:
-
 	SqlHandle hEnv;
 	SqlHandle hDbc;
 public:
@@ -113,12 +82,22 @@ public:
 
 class OdbcCursor : public BaseCursor, public BaseOdbc
 {
+	struct OneColumnInfo
+	{
+		SQLLEN columnType;
+		String columnTypeName;
+		// SQL_DESC_CONCISE_TYPE 
+	};
+
+	std::vector < OneColumnInfo>  columnsInfoODBC;
+
 	OdbcConnection& connection;
     SqlHandle hStmt;	
 
-	int get_execute_result(SqlHandle &hStmt, SQLSMALLINT numResults,
-						   std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo);
-	ResultRow get_row(SqlHandle &hStmt, SQLSMALLINT numCols);
+	int get_execute_result(SQLSMALLINT numResults,
+						   std::deque<ResultRow> &resultTab);
+	void get_columns_data(SQLSMALLINT numResults, ColumnsInfo& columnsInfo);
+	ResultRow get_row(SQLSMALLINT numCols);
 
 public:
 	explicit OdbcCursor(OdbcConnection& connection_)
