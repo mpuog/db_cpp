@@ -2,6 +2,10 @@
 #include <iterator>
 #include <string>
 #include <dbpp.hpp>
+#ifdef WIN32
+#include <windows.h>
+#endif // WIN32
+
 
 using namespace dbpp;
 
@@ -40,7 +44,7 @@ void show_tab(Cursor& cursor, std::string const& comment = "", std::string const
 }
 
 
-#if 0
+#if 1
 // sqlite-odbc
 // 
 
@@ -57,7 +61,7 @@ void f()
     cursor.execute(sqlite_create_table);
     cursor.execute(sql_insert_1);
     cursor.execute(sql_insert_2);
-    //cursor.execute(sql_insert_3);
+    cursor.execute(sql_insert_3);
     //cursor.executemany(sql_insert_many, inputTab);
     // cursor.execute("SELECT * from PERSON");
     show_tab(cursor, "after INSERT");
@@ -130,18 +134,17 @@ void f()
 
 int main()
 {
+#ifdef WIN32
+    // работает в Mingw64, НЕ работает в VS!!!
+    SetConsoleOutputCP(65001);
+#endif // WIN32
+
     std::cout << __DATE__ " " __TIME__ "  "
 #ifdef _MSC_VER
         << "MS:" << _MSC_VER
 #else
         << "GCC:" << __GNUC__
 #endif // _MSC_VER
-
-
-#ifdef WIN32
-
-#endif // WIN32
-
 
 #ifdef WIN32
         << " WINDOWS "
@@ -162,6 +165,6 @@ int main()
     {
         std::cout << "STD_EXCEPTION:" << err.what() << "\n";
     }
-    std::cout << "||>>>>>>>>>>>>>>\n";
+    std::cout << ">>>>>>>>>>>>>>\n";
     return 0;
 }
