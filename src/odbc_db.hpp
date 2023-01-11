@@ -84,9 +84,11 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 {
 	struct OneColumnInfo
 	{
-		SQLLEN columnType;
-		String columnTypeName;
-		// SQL_DESC_CONCISE_TYPE 
+		// SQL_DESC_CONCISE_TYPE ?? or SQL_DESC_TYPE
+		SQLLEN columnType;  ///< column type id
+		String columnTypeName;  /// column type name
+		size_t indexVariant;  ///< index in ResultCell variant if data isn't null
+
 	};
 
 	std::vector < OneColumnInfo>  columnsInfoODBC;
@@ -96,7 +98,7 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 
 	int get_execute_result(SQLSMALLINT numResults,
 						   std::deque<ResultRow> &resultTab);
-	void get_columns_data(SQLSMALLINT numResults, ColumnsInfo& columnsInfo);
+	void get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo);
 	ResultRow get_row(SQLSMALLINT numCols);
 
 public:

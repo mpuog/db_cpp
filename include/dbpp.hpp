@@ -71,7 +71,7 @@ namespace dbpp {
 
 	struct OneColumnInfo
 	{
-		String name;
+		String name;  ///< colunm nane
 		// TODO other fields according to PEP 249
 	};
 

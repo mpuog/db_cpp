@@ -13,23 +13,24 @@ const std::string sqlite_create_table = "CREATE TABLE PERSON("
 "ID INT PRIMARY KEY     NOT NULL, "
 "NAME           TEXT    NOT NULL, "
 "AGE            INT     NOT NULL, "
-"SALARY         REAL );";
+"SALARY         REAL, "
+"DATA           BLOB); ";
 
 const std::string sql_insert_many("INSERT INTO PERSON VALUES(?, ?, ?, ?);");
 const std::string sql_select = "SELECT * from PERSON;";
 const std::string sql_delete = "DELETE from PERSON where ID=2;";
 const std::string sql_delete_s = "DELETE from PERSON where NAME=?;";
 
-const InputRow row1 = { 1, "STEVE", 30, 1000.0 };
-const InputRow row2 = { 2, "BILL", 20, 300.22 };
-const InputRow row3 = { 3, u8"ЖОРА", 24, 9900 };
+const InputRow row1 = { 1, "STEVE", 30, 1000.0, null};
+const InputRow row2 = { 2, "BILL", 20, 300.22, null };
+const InputRow row3 = { 3, u8"ЖОРА", 24, 9900, null };
 const InputTab inputTab = { row1, row2, row3 };
 const std::string sql_insert_1 =
-    "INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0);";
+    "INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0, NULL);";
 const std::string sql_insert_2 = 
-    "INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22);";
+    "INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22, NULL);";
 const std::string sql_insert_3 = 
-    u8"INSERT INTO PERSON VALUES(3, 'ЖОРА', 24, 9900.0);";
+    u8"INSERT INTO PERSON VALUES(3, 'ЖОРА', 24, 9900.0, NULL);";
 
 const std::string sql_insert_n =
     sql_insert_1 + sql_insert_1 + sql_insert_1;

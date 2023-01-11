@@ -74,6 +74,7 @@ ResultRow OdbcCursor::get_row(SQLSMALLINT numCols)
         SQLLEN indicator;
         char buf[512];
         /* FIXME obtain different types instead of retrieve column data as a string */
+
         RETCODE RetCode = SQLGetData(hStmt, i, SQL_C_CHAR, buf, sizeof(buf), &indicator);
         if (SQL_SUCCEEDED(RetCode)) 
         {
@@ -81,7 +82,7 @@ ResultRow OdbcCursor::get_row(SQLSMALLINT numCols)
             if (indicator == SQL_NULL_DATA) 
                 row.emplace_back(null);
             else
-                row.emplace_back(String(buf));
+                row.emplace_back(String(buf, indicator));
         }
     }
 
@@ -89,7 +90,7 @@ ResultRow OdbcCursor::get_row(SQLSMALLINT numCols)
 }
 
 
-void OdbcCursor::get_columns_data(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)
+void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)
 {
     // fill external and inernal arrays columns info
     columnsInfo.clear();
@@ -107,9 +108,9 @@ void OdbcCursor::get_columns_data(SQLSMALLINT numResults, ColumnsInfo& columnsIn
 
         columnsInfo.push_back({ buffer });
 
-        // SQL_DESC_TYPE ?
+        // SQL_DESC_TYPE ? SQL_DESC_CONCISE_TYPE
         SQLLEN columnType;
-        retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_CONCISE_TYPE,
+        retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_TYPE,
             NULL, 0, NULL, &columnType);
         retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_TYPE_NAME,
             (SQLPOINTER)buffer, (SQLSMALLINT)bufferSize, &bufferLenUsed, NULL);
@@ -161,7 +162,7 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
         PRINT1(numResults)
         if (numResults > 0)
         {
-            get_columns_data(numResults, columnsInfo);
+            get_columns_info(numResults, columnsInfo);
             return get_execute_result(numResults, resultTab);
         }
         else
