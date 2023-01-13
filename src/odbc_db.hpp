@@ -38,7 +38,7 @@ public:
 
 	~SqlHandle()
 	{
-		if (handle) // if initialized
+    	if (SQL_NULL_HANDLE != handle) // if initialized
 		{
 			SQLFreeHandle(handleType, handle);
 			handle = SQL_NULL_HANDLE;
@@ -86,8 +86,13 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 	{
 		// SQL_DESC_CONCISE_TYPE ?? or SQL_DESC_TYPE
 		SQLLEN columnType;  ///< column type id
-		String columnTypeName;  /// column type name
+		String columnTypeName;  ///< column type name
 		size_t indexVariant;  ///< index in ResultCell variant if data isn't null
+		SQLLEN getDataType;  ///< type for using in SQLGetData function
+
+
+	public:
+		OneColumnInfo(SQLLEN type, const String& name);
 
 	};
 
@@ -100,6 +105,7 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 						   std::deque<ResultRow> &resultTab);
 	void get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo);
 	ResultRow get_row(SQLSMALLINT numCols);
+	ResultCell get_cell(SQLSMALLINT nCol);
 
 public:
 	explicit OdbcCursor(OdbcConnection& connection_)

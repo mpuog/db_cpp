@@ -47,6 +47,7 @@ namespace dbpp {
 	using Blob = std::vector<char>;
 
 	/// Output cell from SQL SELECT operation
+	///@todo guid, date/time
 	using ResultCell = std::variant<Null, int, double, String, Blob>;
 
 	/// One result row of SELECT operation
@@ -56,6 +57,7 @@ namespace dbpp {
 	using ResultTab = std::vector<ResultRow> ;
 
 	/// Input datum for SQL INSERT/UPDATE operation. 
+	///@todo guid, date/time
 	using InputCell = std::variant<Null, int, double, String, Blob>;
 
 	/// Input row for SQL INSERT/UPDATE operation

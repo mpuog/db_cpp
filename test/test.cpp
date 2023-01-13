@@ -16,7 +16,7 @@ const std::string sqlite_create_table = "CREATE TABLE PERSON("
 "SALARY         REAL, "
 "DATA           BLOB); ";
 
-const std::string sql_insert_many("INSERT INTO PERSON VALUES(?, ?, ?, ?);");
+const std::string sql_insert_many("INSERT INTO PERSON VALUES(?, ?, ?, ?, ?);");
 const std::string sql_select = "SELECT * from PERSON;";
 const std::string sql_delete = "DELETE from PERSON where ID=2;";
 const std::string sql_delete_s = "DELETE from PERSON where NAME=?;";

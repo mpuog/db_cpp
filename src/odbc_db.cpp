@@ -70,25 +70,53 @@ ResultRow OdbcCursor::get_row(SQLSMALLINT numCols)
 {
     ResultRow row;
     for (SQLUSMALLINT i = 1; i <= numCols; i++) 
-    {
-        SQLLEN indicator;
-        char buf[512];
-        /* FIXME obtain different types instead of retrieve column data as a string */
-
-        RETCODE RetCode = SQLGetData(hStmt, i, SQL_C_CHAR, buf, sizeof(buf), &indicator);
-        if (SQL_SUCCEEDED(RetCode)) 
-        {
-            /* Handle null columns */
-            if (indicator == SQL_NULL_DATA) 
-                row.emplace_back(null);
-            else
-                row.emplace_back(String(buf, indicator));
-        }
-    }
+        row.push_back(std::move(get_cell(i)));
 
     return row;
 }
 
+ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
+{
+    ResultCell cell;
+    SQLLEN indicator;
+    RETCODE retCode = SQL_SUCCESS;
+    char buf[512];
+    /* FIXME obtain different types instead of retrieve column data as a string */
+    SQLSMALLINT getDataType = columnsInfoODBC[nCol - 1].getDataType;
+    if (SQL_C_CHAR == getDataType)
+    {
+        retCode = SQLGetData(hStmt, nCol, SQL_C_CHAR, buf, 0, &indicator);
+        // todo CHECKING RECODE
+        if (indicator == SQL_NULL_DATA) 
+            cell = null;
+        else
+        {
+            auto s = String(indicator + 1, '\0');
+            // FIXME get lengh, then allocate buffer, etc
+            retCode = SQLGetData(hStmt, nCol, SQL_C_CHAR, &s[0], indicator + 1, &indicator);
+            // todo CHECKING RECODE
+            cell = std::move(s);
+        }
+    }
+    else
+    {
+        retCode = SQLGetData(hStmt, nCol, getDataType, buf, sizeof(buf), &indicator);
+        // todo CHECKING RECODE
+        if (SQL_SUCCEEDED(retCode)) 
+        {
+            /* Handle null columns */
+            if (indicator == SQL_NULL_DATA) 
+                cell = null;
+            else if (SQL_INTEGER == getDataType)
+                cell = *reinterpret_cast<SQLINTEGER*>(buf);
+            else if (SQL_DOUBLE == getDataType)
+                cell = *reinterpret_cast<SQLDOUBLE*>(buf);
+            // SQL_BIGINT SQL_GUID
+        }
+    }
+
+    return cell;
+}
 
 void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)
 {
@@ -123,11 +151,9 @@ void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsIn
 int OdbcCursor::get_execute_result(SQLSMALLINT cCols,
                                    std::deque<ResultRow> &resultTab)
 {
-    RETCODE         RetCode = SQL_SUCCESS;
-
+    RETCODE RetCode = SQL_SUCCESS;
     while (SQL_SUCCEEDED(RetCode = SQLFetch(hStmt))) 
         resultTab.push_back(get_row(cCols));
-
     return -1;
 }
 
@@ -144,7 +170,7 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
     // FIXME processing InputRow const &data
 
     RETCODE retCode = SQLExecDirectA(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
-    PRINT1(retCode)
+    // PRINT1(retCode)
     switch (retCode)
     {
     case SQL_SUCCESS_WITH_INFO:
@@ -159,7 +185,7 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
         // If this is a row-returning query, display results
         // TRYODBC(hStmt, SQL_HANDLE_STMT, SQLNumResultCols(hStmt, &sNumResults));
         CheckResultCode(hStmt, SQLNumResultCols(hStmt, &numResults));
-        PRINT1(numResults)
+        // PRINT1(numResults)
         if (numResults > 0)
         {
             get_columns_info(numResults, columnsInfo);
@@ -170,7 +196,7 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
             SQLLEN cRowCount;
             //TRYODBC(hStmt, SQL_HANDLE_STMT,SQLRowCount(hStmt, &cRowCount));
             CheckResultCode(hStmt, SQLRowCount(hStmt, &cRowCount));
-            PRINT1(cRowCount)
+            // PRINT1(cRowCount)
             return cRowCount;
         }
         break;
@@ -207,4 +233,28 @@ SqlHandle &SqlHandle::operator=(SqlHandle &&other)
 	handleType = other.handleType;
     other.handle = SQL_NULL_HANDLE;
     return *this;
+}
+
+OdbcCursor::OneColumnInfo::OneColumnInfo(SQLLEN type, const String &name)
+	: columnType(type), columnTypeName(name), getDataType(type)
+{
+	if (SQL_INTEGER == columnType)
+    {
+        indexVariant = 1;
+    }
+    else if (SQL_DOUBLE == columnType)
+    {
+        indexVariant = 2;
+    }
+    else if ("BLOB" == columnTypeName)
+    {
+        indexVariant = 4;
+        getDataType = SQL_C_CHAR;
+    }
+    else  
+    {
+        // all unknown as text, will be converted by used ODBC/DB convrrter
+        indexVariant = 3;
+        getDataType = SQL_C_CHAR;
+    }
 }
