@@ -90,9 +90,9 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
         if (indicator == SQL_NULL_DATA) 
             cell = null;
         else
+            // FIXME BINARY data
         {
             auto s = String(indicator + 1, '\0');
-            // FIXME get lengh, then allocate buffer, etc
             retCode = SQLGetData(hStmt, nCol, SQL_C_CHAR, &s[0], indicator + 1, &indicator);
             // todo CHECKING RECODE
             cell = std::move(s);
@@ -116,6 +116,47 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
     }
 
     return cell;
+}
+
+void OdbcCursor::bind_params(InputRow const &data)
+{
+    SQLUSMALLINT nParam = 0;  
+    for (auto const&datum : data)
+    {
+        RETCODE retCode = SQL_SUCCESS;
+        ++nParam;
+        // TODO std::varian branching for different types
+        if (datum.index() == 0) // NULL db value
+        {
+            /*
+            retCode = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, 
+                SQL_CHAR, EMPLOYEE_ID_LEN, 0, szEmployeeID, 0, &cbEmployeeID);  
+            retCode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_SSHORT, 
+                SQL_INTEGER, 0, 0, &sCustID, 0, &cbCustID);  
+            retCode = SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_TYPE_DATE, 
+                SQL_TIMESTAMP, sizeof(dsOrderDate), 0, &dsOrderDate, 0, &cbOrderDate);  
+
+            retCode = SQLBindParameter(hStmt, nParam, SQL_NULL_DATA
+      SQLSMALLINT     InputOutputType,  
+      SQLSMALLINT     ValueType,  
+      SQLSMALLINT     ParameterType,  
+      SQLULEN         ColumnSize,  
+      SQLSMALLINT     DecimalDigits,  
+      SQLPOINTER      ParameterValuePtr,  
+      SQLLEN          BufferLength,  
+      SQLLEN *        StrLen_or_IndPtr);  
+            */
+        }
+        else
+        {
+            std::ostringstream ss;
+            ss << datum;
+            std::string s = ss.str();
+            PRINT1(s)
+
+        }
+
+    }
 }
 
 void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)
@@ -161,16 +202,22 @@ int OdbcCursor::get_execute_result(SQLSMALLINT cCols,
 int OdbcCursor::execute_impl(String const &query, InputRow const &data,
                              std::deque<ResultRow> &resultTab, ColumnsInfo &columnsInfo)
 {
-    // execute resets hStmt 
+    // executing resets hStmt 
     hStmt.~SqlHandle();
     CheckResultCode(hStmt, SQLAllocHandle(SQL_HANDLE_STMT, connection.hDbc, &hStmt));
 
     SQLSMALLINT numResults;
 
+    RETCODE retCode = SQLPrepareA(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
+    // FIXME check retCode
+    //SQLExecDirectA(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
     // FIXME processing InputRow const &data
+    bind_params(data);
 
-    RETCODE retCode = SQLExecDirectA(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
+    retCode = SQLExecute(hStmt);
+    // FIXME check retCode
     // PRINT1(retCode)
+
     switch (retCode)
     {
     case SQL_SUCCESS_WITH_INFO:
