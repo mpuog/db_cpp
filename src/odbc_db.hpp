@@ -106,7 +106,7 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 	void get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo);
 	ResultRow get_row(SQLSMALLINT numCols);
 	ResultCell get_cell(SQLSMALLINT nCol);
-	void bind_params(InputRow const &data);
+	void bind_one_param(SQLUSMALLINT nParam, InputCell const &datum);
 
 public:
 	explicit OdbcCursor(OdbcConnection& connection_)
