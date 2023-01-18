@@ -112,4 +112,15 @@ namespace dbpp
 
 };  // namespace dbpp
 
+// ========= utils =============
 
+/// @todo Now only print 'Blob'
+std::ostream& operator << (
+	std::ostream& os, dbpp::Blob const& blob)
+{
+	os << "BLOB[" << blob.size() << "]:";
+	// FIXME restrict range to first 16 bytes, add size, print in hex 
+	for (const auto& x : blob)
+		os << " " << x ;
+	return os;
+}

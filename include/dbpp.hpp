@@ -16,6 +16,9 @@
 #include <stdexcept>
 #include <deque>
 
+// FIXME define export functions
+#define EXPORT
+
 namespace dbpp {
 	/// Base module exception
 	class Error : public std::runtime_error
@@ -104,19 +107,19 @@ namespace dbpp {
 			arraysize_ = newsize; }
 		// TODO virtual void close() = 0;
 
-		void execute(String const& query, InputRow const& data = {});
+		void EXPORT execute(String const& query, InputRow const& data = {});
 
 		ColumnsInfo const& description() const
 		{
 			return columnsInfo;
 		}
 
-		void executemany(String const& query, 
+		void EXPORT executemany(String const& query,
 			InputTab const& input_data);
 		//virtual void callproc(string_t const& proc_name) = 0; // ??
-		std::optional<dbpp::ResultRow> fetchone();
-		ResultTab fetchall();
-		ResultTab fetchmany(int size=-1);
+		std::optional<dbpp::ResultRow> EXPORT fetchone();
+		ResultTab EXPORT fetchall();
+		ResultTab EXPORT fetchmany(int size=-1);
 
         /// Rewrite sql result to some receiver
         template <class out_iterator>
@@ -145,11 +148,11 @@ namespace dbpp {
 		~Connection();
 		Connection(Connection const&) = delete;
 		Connection& operator = (Connection const&) = delete;
-		Cursor cursor();
-        bool autocommit();
-        void autocommit(bool autocommitFlag);
-        void commit();  
-        void rollback();
+		Cursor EXPORT cursor();
+        bool EXPORT autocommit();
+        void EXPORT autocommit(bool autocommitFlag);
+        void EXPORT commit();
+        void EXPORT rollback();
 		// void close(); 
     	// int threadsafety();  // global method in PEP 249
 	    // std::string paramstyle()  // global method in PEP 249
@@ -160,7 +163,7 @@ namespace dbpp {
 		/// @param addParams : Addtitional params in syntax name1=value1;name2=value2,... 
 		///                    Similar to additional params in python's sqlite3.connect() function. 
 		///                    Params are specific for each db type and is absond for ODBC 
-		static Connection connect(db type, std::string const& connectString, std::string const& addParams = "");
+		static Connection EXPORT connect(db type, std::string const& connectString, std::string const& addParams = "");
 	};  // class Connection
 
     // =============== functions ======================
@@ -183,12 +186,8 @@ inline std::ostream &operator << (
 }
 
 /// Realization Blob's output
-/// @todo Now only print 'Blob'
-inline std::ostream& operator << (
-	std::ostream& os, dbpp::Blob const&)
-{
-	return os << "BLOB";
-}
+std::ostream& EXPORT operator << (
+	std::ostream& os, dbpp::Blob const& blob);
 
 
 /// Simple realization cell's output

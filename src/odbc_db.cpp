@@ -107,14 +107,14 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
     ResultCell cell;
     SQLLEN indicator;
     RETCODE retCode = SQL_SUCCESS;
-    char buf[512];
-    /* FIXME obtain different types instead of retrieve column data as a string */
+    // buf for different types with limited length. todo 512 is too match :)
+    char buf[512]; 
     SQLSMALLINT getDataType = columnsInfoODBC[nCol - 1].getDataType;
     if (SQL_C_CHAR == getDataType)
     {
         retCode = SQLGetData(hStmt, nCol, SQL_C_CHAR, buf, 0, &indicator);
         // todo CHECKING RECODE
-        if (indicator == SQL_NULL_DATA) 
+        if (indicator == SQL_NULL_DATA)
             cell = null;
         else
             // FIXME BINARY data
@@ -124,6 +124,24 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
             // todo CHECKING RECODE
             cell = std::move(s);
         }
+    }
+    else if (SQL_BINARY == getDataType)
+    {
+        retCode = SQLGetData(hStmt, nCol, SQL_C_BINARY, buf, 0, &indicator);
+        // todo CHECKING RECODE
+        if (indicator == SQL_NULL_DATA)
+            cell = null;
+        else
+        {
+            Blob s( indicator, 0 );
+            if (!s.empty())
+            {
+                retCode = SQLGetData(hStmt, nCol, SQL_C_BINARY, &s[0], indicator, &indicator);
+                // todo CHECKING RECODE
+            }
+            cell = std::move(s);
+        }
+
     }
     else
     {
@@ -169,7 +187,7 @@ void OdbcCursor::BindOneParam::operator()(const String& s)
 
 void OdbcCursor::BindOneParam::operator()(const Blob& b)
 {
-    RETCODE retCode = SQLBindParameter(hStmt, nParam, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, b.size(), 0, (SQLPOINTER)&b[0], 0, &cb);
+    RETCODE retCode = SQLBindParameter(hStmt, nParam, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, b.size(), 0, (SQLPOINTER)&b[0], 0, &cb);
 }
 
 
@@ -231,34 +249,20 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
 
     SQLSMALLINT numResults;
 
-    //SQLExecDirectA(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
-    // FIXME processing InputRow const &data
-
-    SQLRETURN retcode;
-    
+   
     SQLUSMALLINT paramsNumber = data.size();
     std::vector<SQLLEN> idsParam(paramsNumber, 0);
     for (SQLUSMALLINT n = 1; n <= paramsNumber; ++n)
     {
-        //retcode = SQLBindParameter(hStmt, n + 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&std::get<int>(data[n]), 0, &idsParam[n]);
         std::visit(BindOneParam{ hStmt, n, idsParam[n - 1] }, data[n - 1]);
     }
 
-    //SQLINTEGER i1=2, i2=40;
-    //SQLLEN cb1 = 0, cb2 = 0;
-    //auto x1 = &cb1;
-    //auto y1 = &idsParam[0];
-    //retcode = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &i1, 0, y1);
-    //auto x2 = &cb2;
-    //auto y2 = &idsParam[1];
-    //retcode = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &i2, 0, y2);
-
-    RETCODE retCode = SQLPrepareA(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
+    // FIXME in Windows comnwert to wchar_t sequence?
+    RETCODE retCode = SQLPrepare(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
     // FIXME check retCode
 
     retCode = SQLExecute(hStmt);
     // FIXME check retCode
-    // PRINT1(retCode)
 
     switch (retCode)
     {
@@ -315,7 +319,6 @@ OdbcCursor::OneColumnInfo::OneColumnInfo(SQLLEN type, const String &name)
     else if ("BLOB" == columnTypeName)
     {
         indexVariant = 4;
-        getDataType = SQL_C_CHAR;
     }
     else  
     {

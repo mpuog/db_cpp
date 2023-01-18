@@ -23,20 +23,20 @@ const std::string sql_select = "SELECT * from PERSON;";
 const std::string sql_delete = "DELETE from PERSON where ID=2;";
 const std::string sql_delete_s = "DELETE from PERSON where NAME=?;";
 
-const InputRow row1 = { 1, "STEVE", 30, 1000.1, null};
+const InputRow row1 = { 1, "STEVE", 30, 1000.1, Blob{'a', 'b', 'c'}};
 const InputRow row2 = { 2, "BILL", 20, 300.22, null };
 const InputRow row3 = { 3, u8"ЖОРА", 24, 9900.9, null };
 const InputTab inputTab = { row1, row2, row3 };
-const std::string sql_insert_1 =
-"INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0);";
-const std::string sql_insert_2 =
-"INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22);";
 //const std::string sql_insert_1 =
-//    "INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0, NULL);";
-//const std::string sql_insert_2 = 
-//    "INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22, NULL);";
-//const std::string sql_insert_3 = 
-//    u8"INSERT INTO PERSON VALUES(3, 'ЖОРА', 24, 9900.0, NULL);";
+//"INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0);";
+//const std::string sql_insert_2 =
+//"INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22);";
+const std::string sql_insert_1 =
+    "INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0, NULL);";
+const std::string sql_insert_2 = 
+    "INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22, NULL);";
+const std::string sql_insert_3 = 
+    u8"INSERT INTO PERSON VALUES(3, 'ЖОРА', 24, 9900.0, NULL);";
 
 const std::string sql_insert_n =
     sql_insert_1 + sql_insert_1 + sql_insert_1;
@@ -58,20 +58,23 @@ void show_tab(Cursor& cursor, std::string const& comment = "", std::string const
 void f()
 {
     auto connection = connect(db::odbc, "Driver={SQLite3 ODBC Driver};Database="
-        /*
+        //*
         "test.db");
         /*/
         ":memory:");
         //*/
 
     auto cursor = connection.cursor();
-    cursor.execute(sqlite_create_table);
+    //cursor.execute(sqlite_create_table);
     //show_tab(cursor, "after CREATE");
-    cursor.execute(sql_insert_many, row1);
-    //cursor.execute(sql_insert_1);
-    //cursor.execute(sql_insert_2);
-    //cursor.execute(sql_insert_3);
+    //cursor.execute(sql_insert_many, row1);
+    /* 
+    cursor.execute(sql_insert_1);
+    cursor.execute(sql_insert_2);
+    cursor.execute(sql_insert_3);
+    /*/
     //cursor.executemany(sql_insert_many, inputTab);
+    //*/
     // cursor.execute("SELECT * from PERSON");
     show_tab(cursor, "after INSERT");
     //cursor.execute(sql_delete_s, { "BILL" });
