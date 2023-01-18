@@ -3,6 +3,7 @@
 #include "common.hpp"
 #include <Windows.h>
 #include <sql.h>
+#include <iostream>
 
 using namespace dbpp;
 
@@ -96,6 +97,20 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 
 	};
 
+	struct BindOneParam
+	{
+		SqlHandle& hStmt;
+		SQLUSMALLINT nParam;
+		SQLLEN &cb;
+	public:
+		//BindOneParam(SqlHandle& hStmt) : hStmt(hStmt) {}
+		void operator()(const Null&);
+		void operator()(const int& i);
+		void operator()(const double& d);
+		void operator()(const String& s);
+		void operator()(const Blob& b);
+	};
+
 	std::vector < OneColumnInfo>  columnsInfoODBC;
 
 	OdbcConnection& connection;
@@ -106,7 +121,6 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 	void get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo);
 	ResultRow get_row(SQLSMALLINT numCols);
 	ResultCell get_cell(SQLSMALLINT nCol);
-	void bind_one_param(SQLUSMALLINT nParam, InputCell const &datum);
 
 public:
 	explicit OdbcCursor(OdbcConnection& connection_)

@@ -10,27 +10,33 @@
 using namespace dbpp;
 
 const std::string sqlite_create_table = "CREATE TABLE PERSON("
-"ID INT PRIMARY KEY     NOT NULL, "
-"NAME           TEXT    NOT NULL, "
-"AGE            INT     NOT NULL, "
-"SALARY         REAL, "
-"DATA           BLOB); ";
+"ID INT PRIMARY KEY     NOT NULL "
+",NAME           TEXT    NOT NULL "
+",AGE            INT     NOT NULL "
+",SALARY         REAL "
+",DATA           BLOB"
+")";
 
-const std::string sql_insert_many("INSERT INTO PERSON VALUES(?, ?, ?, ?, ?);");
+const std::string sql_insert_many =
+    "INSERT INTO PERSON VALUES(?, ?, ?, ?, ?);";
 const std::string sql_select = "SELECT * from PERSON;";
 const std::string sql_delete = "DELETE from PERSON where ID=2;";
 const std::string sql_delete_s = "DELETE from PERSON where NAME=?;";
 
-const InputRow row1 = { 1, "STEVE", 30, 1000.0, null};
+const InputRow row1 = { 1, "STEVE", 30, 1000.1, null};
 const InputRow row2 = { 2, "BILL", 20, 300.22, null };
-const InputRow row3 = { 3, u8"ЖОРА", 24, 9900, null };
+const InputRow row3 = { 3, u8"ЖОРА", 24, 9900.9, null };
 const InputTab inputTab = { row1, row2, row3 };
 const std::string sql_insert_1 =
-    "INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0, NULL);";
-const std::string sql_insert_2 = 
-    "INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22, NULL);";
-const std::string sql_insert_3 = 
-    u8"INSERT INTO PERSON VALUES(3, 'ЖОРА', 24, 9900.0, NULL);";
+"INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0);";
+const std::string sql_insert_2 =
+"INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22);";
+//const std::string sql_insert_1 =
+//    "INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0, NULL);";
+//const std::string sql_insert_2 = 
+//    "INSERT INTO PERSON VALUES(2, 'BILL', 20, 300.22, NULL);";
+//const std::string sql_insert_3 = 
+//    u8"INSERT INTO PERSON VALUES(3, 'ЖОРА', 24, 9900.0, NULL);";
 
 const std::string sql_insert_n =
     sql_insert_1 + sql_insert_1 + sql_insert_1;
@@ -60,9 +66,11 @@ void f()
 
     auto cursor = connection.cursor();
     cursor.execute(sqlite_create_table);
-    cursor.execute(sql_insert_1);
-    cursor.execute(sql_insert_2);
-    cursor.execute(sql_insert_3);
+    //show_tab(cursor, "after CREATE");
+    cursor.execute(sql_insert_many, row1);
+    //cursor.execute(sql_insert_1);
+    //cursor.execute(sql_insert_2);
+    //cursor.execute(sql_insert_3);
     //cursor.executemany(sql_insert_many, inputTab);
     // cursor.execute("SELECT * from PERSON");
     show_tab(cursor, "after INSERT");
