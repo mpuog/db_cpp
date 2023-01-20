@@ -101,6 +101,11 @@ OdbcConnection::OdbcConnection(std::string const& connectString)
                       SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
 }
 
+bool OdbcConnection::autocommit()
+{
+    return false;
+}
+
 BaseCursor* OdbcConnection::cursor()
 {
     return new OdbcCursor(*this);
@@ -132,7 +137,6 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
         if (indicator == SQL_NULL_DATA)
             cell = null;
         else
-            // FIXME BINARY data
         {
             auto s = String(indicator + 1, '\0');
             CHECK_RESULT_CODE(SQLGetData, hStmt, nCol, SQL_C_CHAR, &s[0], indicator + 1, &indicator);
@@ -142,7 +146,6 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
     else if (SQL_BINARY == getDataType)
     {
         CHECK_RESULT_CODE(SQLGetData, hStmt, nCol, SQL_C_BINARY, buf, 0, &indicator);
-        // todo CHECKING RECODE
         if (indicator == SQL_NULL_DATA)
             cell = null;
         else

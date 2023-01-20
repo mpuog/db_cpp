@@ -11,9 +11,7 @@ namespace dbpp
 	public:
 		virtual ~BaseConnection() {}
 		virtual BaseCursor *cursor() = 0;
-        virtual bool autocommit() {
-            return true;
-        }
+		virtual bool autocommit() = 0;
         virtual void autocommit(bool autocommitFlag) 
         {}
         virtual void commit() 
@@ -27,8 +25,8 @@ namespace dbpp
 	protected:
 		BaseCursor() = default;
 
-		/// Data fo stupid method when select operator puts all data to resultTab.
-		/// Slow if select without restrictions on quantity, but not all data need later.
+		/// Data for stupid method when select operator puts all data to resultTab.
+		/// May be slow if select without restrictions on quantity, but not all data need later.
 		std::deque<ResultRow> resultTab;
 
 		virtual int execute_impl(

@@ -80,6 +80,8 @@ public:
 
 	// Inherited via BaseConnection
 	BaseCursor* cursor() final;
+
+	bool autocommit() final;
 };
 
 class OdbcCursor : public BaseCursor, public BaseOdbc
