@@ -92,13 +92,13 @@ OdbcConnection::OdbcConnection(std::string const& connectString)
     : CONSTRUCT_HANDLE_WITH_TYPE(hEnv, SQL_HANDLE_ENV, SQL_NULL_HANDLE)
     , hDbc(SQL_HANDLE_DBC)
 {
-    CheckResultCode(hEnv, SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION,
-        (SQLPOINTER)SQL_OV_ODBC3, 0));
+    CHECK_RESULT_CODE(SQLSetEnvAttr, hEnv, SQL_ATTR_ODBC_VERSION,
+        (SQLPOINTER)SQL_OV_ODBC3, 0);
     CheckResultCode(hEnv, SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDbc));
 
-    CheckResultCode(hEnv, SQLDriverConnectA(
-                              hDbc, NULL, (SQLCHAR *)connectString.c_str(), 
-                              SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE));
+    CHECK_RESULT_CODE(SQLDriverConnectA, hDbc, NULL, 
+                      (SQLCHAR *)connectString.c_str(), 
+                      SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
 }
 
 BaseCursor* OdbcConnection::cursor()
@@ -121,14 +121,13 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
 {
     ResultCell cell;
     SQLLEN indicator;
-    RETCODE retCode = SQL_SUCCESS;
     // buf for different types with limited length. todo 512 is too match :)
     char buf[512]; 
     SQLSMALLINT getDataType = 
         static_cast<SQLSMALLINT>(columnsInfoODBC[nCol - 1].getDataType);
     if (SQL_C_CHAR == getDataType)
     {
-        retCode = SQLGetData(hStmt, nCol, SQL_C_CHAR, buf, 0, &indicator);
+        CHECK_RESULT_CODE(SQLGetData, hStmt, nCol, SQL_C_CHAR, buf, 0, &indicator);
         // todo CHECKING RECODE
         if (indicator == SQL_NULL_DATA)
             cell = null;
@@ -136,14 +135,13 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
             // FIXME BINARY data
         {
             auto s = String(indicator + 1, '\0');
-            retCode = SQLGetData(hStmt, nCol, SQL_C_CHAR, &s[0], indicator + 1, &indicator);
-            // todo CHECKING RECODE
+            CHECK_RESULT_CODE(SQLGetData, hStmt, nCol, SQL_C_CHAR, &s[0], indicator + 1, &indicator);
             cell = std::move(s);
         }
     }
     else if (SQL_BINARY == getDataType)
     {
-        retCode = SQLGetData(hStmt, nCol, SQL_C_BINARY, buf, 0, &indicator);
+        CHECK_RESULT_CODE(SQLGetData, hStmt, nCol, SQL_C_BINARY, buf, 0, &indicator);
         // todo CHECKING RECODE
         if (indicator == SQL_NULL_DATA)
             cell = null;
@@ -152,8 +150,8 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
             Blob s(indicator, 0);
             if (!s.empty())
             {
-                retCode = SQLGetData(hStmt, nCol, SQL_C_BINARY, &s[0], indicator, &indicator);
-                // todo CHECKING RECODE
+                CHECK_RESULT_CODE(SQLGetData, hStmt, 
+                    nCol, SQL_C_BINARY, &s[0], indicator, &indicator);
             }
             cell = std::move(s);
         }
@@ -161,19 +159,17 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
     }
     else
     {
-        retCode = SQLGetData(hStmt, nCol, getDataType, buf, sizeof(buf), &indicator);
-        // todo CHECKING RECODE
-        if (SQL_SUCCEEDED(retCode)) 
-        {
-            /* Handle null columns */
-            if (indicator == SQL_NULL_DATA) 
-                cell = null;
-            else if (SQL_INTEGER == getDataType)
-                cell = *reinterpret_cast<SQLINTEGER*>(buf);
-            else if (SQL_DOUBLE == getDataType)
-                cell = *reinterpret_cast<SQLDOUBLE*>(buf);
-            // SQL_BIGINT SQL_GUID
-        }
+        CHECK_RESULT_CODE(
+            SQLGetData, hStmt, nCol, getDataType, buf, sizeof(buf), &indicator);
+
+        /* Handle null columns */
+        if (indicator == SQL_NULL_DATA) 
+            cell = null;
+        else if (SQL_INTEGER == getDataType)
+            cell = *reinterpret_cast<SQLINTEGER*>(buf);
+        else if (SQL_DOUBLE == getDataType)
+            cell = *reinterpret_cast<SQLDOUBLE*>(buf);
+        // SQL_BIGINT SQL_GUID
     }
 
     return cell;
@@ -182,28 +178,28 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
 void OdbcCursor::BindOneParam::operator()(const Null&)
 {
     cb = SQL_NULL_DATA;
-    RETCODE retCode = SQLBindParameter(hStmt, nParam, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 0, 0, 0, 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 0, 0, 0, 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const int& i)
 {
-    RETCODE retCode = SQLBindParameter(hStmt, nParam, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&i, 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&i, 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const double& d)
 {
-    RETCODE retCode = SQLBindParameter(hStmt, nParam, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, (SQLPOINTER)&d, 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, (SQLPOINTER)&d, 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const String& s)
 {
     cb = SQL_NTS;
-    RETCODE retCode = SQLBindParameter(hStmt, nParam, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, s.size(), 0, (SQLPOINTER)&s[0], 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, s.size(), 0, (SQLPOINTER)&s[0], 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const Blob& b)
 {
-    RETCODE retCode = SQLBindParameter(hStmt, nParam, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, b.size(), 0, (SQLPOINTER)&b[0], 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, b.size(), 0, (SQLPOINTER)&b[0], 0, &cb);
 }
 
 void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)
@@ -216,19 +212,18 @@ void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsIn
     {
         const int bufferSize = 1024;
         char buffer[bufferSize];
-        SQLRETURN retCode;
         SQLSMALLINT bufferLenUsed;
         SQLLEN NumericAttributePtr;
-        retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_LABEL, 
+        CHECK_RESULT_CODE(SQLColAttributeA, hStmt, nCol, SQL_DESC_LABEL,
             (SQLPOINTER)buffer, (SQLSMALLINT)bufferSize, &bufferLenUsed, NULL);
 
         columnsInfo.push_back({ buffer });
 
         // SQL_DESC_TYPE ? SQL_DESC_CONCISE_TYPE
         SQLLEN columnType;
-        retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_TYPE,
+        CHECK_RESULT_CODE(SQLColAttribute, hStmt, nCol, SQL_DESC_TYPE,
             NULL, 0, NULL, &columnType);
-        retCode = SQLColAttributeA(hStmt, nCol, SQL_DESC_TYPE_NAME,
+        CHECK_RESULT_CODE(SQLColAttributeA, hStmt, nCol, SQL_DESC_TYPE_NAME,
             (SQLPOINTER)buffer, (SQLSMALLINT)bufferSize, &bufferLenUsed, NULL);
 
         columnsInfoODBC.push_back({ columnType, buffer });
@@ -239,8 +234,7 @@ void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsIn
 int OdbcCursor::get_execute_result(SQLSMALLINT cCols,
                                    std::deque<ResultRow> &resultTab)
 {
-    RETCODE RetCode = SQL_SUCCESS;
-    while (SQL_SUCCEEDED(RetCode = SQLFetch(hStmt))) 
+    while (SQL_SUCCEEDED(SQLFetch(hStmt))) 
         resultTab.push_back(get_row(cCols));
     return -1;
 }
