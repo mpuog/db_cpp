@@ -58,14 +58,14 @@ void show_tab(Cursor& cursor, std::string const& comment = "", std::string const
 void f()
 {
     auto connection = connect(db::odbc, "Driver={SQLite3 ODBC Driver};Database="
-        //*
+        /*
         "test.db");
         /*/
         ":memory:");
         //*/
 
     auto cursor = connection.cursor();
-    //cursor.execute(sqlite_create_table);
+    cursor.execute(sqlite_create_table);
     //show_tab(cursor, "after CREATE");
     //cursor.execute(sql_insert_many, row1);
     /* 
@@ -73,7 +73,7 @@ void f()
     cursor.execute(sql_insert_2);
     cursor.execute(sql_insert_3);
     /*/
-    //cursor.executemany(sql_insert_many, inputTab);
+    cursor.executemany(sql_insert_many, inputTab);
     //*/
     // cursor.execute("SELECT * from PERSON");
     show_tab(cursor, "after INSERT");

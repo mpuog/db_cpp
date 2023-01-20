@@ -59,7 +59,8 @@ public:
 class ErrorODBC : public Error
 {
 public:
-	ErrorODBC(std::string const& message, RETCODE retCode);
+	//ErrorODBC(std::string const& message, RETCODE retCode);
+	ErrorODBC(SqlHandle &h, RETCODE retCode, std::string const& sAddMsg="");
 };
 
 std::string GetDiagnostic(SqlHandle &handle, RETCODE retCode);

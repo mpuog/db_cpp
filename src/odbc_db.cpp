@@ -5,58 +5,73 @@
 #include <iostream>
 #include <sstream>
 
-inline void CheckResultCode(SqlHandle &hStmt, RETCODE retCode, std::string const& errMsg)
+void CheckResultCode(
+    SqlHandle &handle, RETCODE retCode, std::string const& errMsg)
 {
-	if (retCode != SQL_SUCCESS)
-	{ 
-        // FIXME is it exception?? 
-        std::cerr << GetDiagnostic(hStmt, retCode);
-	} 
-	if (retCode == SQL_ERROR) 
-	{ 
-		throw Error(errMsg);  
-	}  
+	if (!SQL_SUCCEEDED(retCode))
+		throw ErrorODBC(handle, retCode, errMsg);
 }
 
-std::string GetDiagnostic(SqlHandle &handle, RETCODE retCode)
-{
-    std::ostringstream sMsg;
+#define CHECK_RESULT_CODE(func, handle, ...) if (false) {} else \
+{ RETCODE rc = func(handle, __VA_ARGS__); \
+if (!SQL_SUCCEEDED(rc)) throw ErrorODBC(handle, rc, " In function " #func); }
 
-    SQLSMALLINT iRec = 0;
-    SQLINTEGER iError;
-    SQLCHAR szMessage[1000];
-    SQLCHAR szState[SQL_SQLSTATE_SIZE + 1];
-
-    if (retCode == SQL_INVALID_HANDLE)
-        return "Invalid handle";
-
-    while (SQLGetDiagRecA(handle.Type(), handle, ++iRec, szState, &iError, szMessage,
-                          (SQLSMALLINT)(sizeof(szMessage) / sizeof(SQLCHAR)),
-                          (SQLSMALLINT *)NULL) == SQL_SUCCESS)
-    {
-        // Hide data truncated..
-        if (strncmp((char *)szState, "01004", 5))
-        {
-            sMsg << (iRec > 1 ? "\n" : "")
-                 << "[" << szState << "] " << szMessage << " (" << iError << ")";
-        }
-    }
-    return sMsg.str();
-}
 
 //  ================= ErrorODBC =====
 
-std::string format_message_with_code(std::string const& message, RETCODE retCode)
+// std::string format_message_with_code(std::string const& message, RETCODE retCode)
+//{
+//    std::ostringstream oss;
+//    // TODO code texts
+//    oss << "Code " << retCode << ":\n" << message;
+//    return oss.str();
+//}
+
+//ErrorODBC::ErrorODBC(std::string const& message, RETCODE retCode)
+//    : Error(format_message_with_code(message, retCode))
+//{
+//}
+
+std::string format_message_with_code(SqlHandle &handle, RETCODE retCode)
 {
     std::ostringstream oss;
-    // TODO code texts
-    oss << "Code " << retCode << ":\n" << message;
+    oss << "Code(";
+    // TODO text instead of code num
+    /*
+#define SQL_ERROR                   (-1)
+#define SQL_INVALID_HANDLE          (-2)
+
+#define SQL_STILL_EXECUTING         2
+#define SQL_NEED_DATA               99
+    */
+    
+    oss << retCode << "):";
+
+    if (retCode == SQL_INVALID_HANDLE)
+        oss << "Invalid handle";
+    else
+    {
+        SQLSMALLINT iRec = 0;
+        SQLINTEGER iError;
+        SQLCHAR szMessage[1000];
+        SQLCHAR szState[SQL_SQLSTATE_SIZE + 1];
+        while (SQLGetDiagRecA(handle.Type(), handle, ++iRec, szState, &iError,
+               szMessage, (SQLSMALLINT)(sizeof(szMessage) / sizeof(SQLCHAR)),
+               (SQLSMALLINT*)NULL) == SQL_SUCCESS)
+        {
+            // Hide data truncated..
+            if (strncmp((char*)szState, "01004", 5))
+            {
+                oss << (iRec > 1 ? "\n" : "") << "[" << szState << "] " 
+                    << szMessage << " (" << iError << ")";
+            }
+        }
+    }
     return oss.str();
 }
 
-
-ErrorODBC::ErrorODBC(std::string const& message, RETCODE retCode)
-    : Error(format_message_with_code(message, retCode))
+ErrorODBC::ErrorODBC(SqlHandle &h, RETCODE retCode, std::string const& sAddMsg)
+    : Error(format_message_with_code(h, retCode) + sAddMsg)
 {
 }
 
@@ -109,7 +124,8 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
     RETCODE retCode = SQL_SUCCESS;
     // buf for different types with limited length. todo 512 is too match :)
     char buf[512]; 
-    SQLSMALLINT getDataType = columnsInfoODBC[nCol - 1].getDataType;
+    SQLSMALLINT getDataType = 
+        static_cast<SQLSMALLINT>(columnsInfoODBC[nCol - 1].getDataType);
     if (SQL_C_CHAR == getDataType)
     {
         retCode = SQLGetData(hStmt, nCol, SQL_C_CHAR, buf, 0, &indicator);
@@ -133,7 +149,7 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
             cell = null;
         else
         {
-            Blob s( indicator, 0 );
+            Blob s(indicator, 0);
             if (!s.empty())
             {
                 retCode = SQLGetData(hStmt, nCol, SQL_C_BINARY, &s[0], indicator, &indicator);
@@ -190,16 +206,6 @@ void OdbcCursor::BindOneParam::operator()(const Blob& b)
     RETCODE retCode = SQLBindParameter(hStmt, nParam, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, b.size(), 0, (SQLPOINTER)&b[0], 0, &cb);
 }
 
-
-/*
-        std::ostringstream ss;
-        ss << datum;
-        std::string s = ss.str();
-        PRINT1(s)
-
-
-*/
-
 void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)
 {
     // fill external and inernal arrays columns info
@@ -247,38 +253,20 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
     hStmt.~SqlHandle();
     CheckResultCode(hStmt, SQLAllocHandle(SQL_HANDLE_STMT, connection.hDbc, &hStmt));
 
-    SQLSMALLINT numResults;
-
-   
-    SQLUSMALLINT paramsNumber = data.size();
-    std::vector<SQLLEN> idsParam(paramsNumber, 0);
-    for (SQLUSMALLINT n = 1; n <= paramsNumber; ++n)
+    std::vector<SQLLEN> idsParam(data.size(), 0);
+    for (SQLUSMALLINT n = 1; n <= data.size(); ++n)
     {
         std::visit(BindOneParam{ hStmt, n, idsParam[n - 1] }, data[n - 1]);
     }
 
     // FIXME in Windows comnwert to wchar_t sequence?
-    RETCODE retCode = SQLPrepare(hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
-    // FIXME check retCode
+    CHECK_RESULT_CODE(SQLPrepare, hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
 
-    retCode = SQLExecute(hStmt);
-    // FIXME check retCode
-
-    switch (retCode)
+    RETCODE retCode = SQLExecute(hStmt);
+    if (SQL_SUCCEEDED(retCode))
     {
-    case SQL_SUCCESS_WITH_INFO:
-    {
-        // fall through
-        // FIXME is it exception?? 
-        std::cerr << GetDiagnostic(hStmt, retCode);
-    }
-
-    case SQL_SUCCESS:
-    {
-        // If this is a row-returning query, display results
-        // TRYODBC(hStmt, SQL_HANDLE_STMT, SQLNumResultCols(hStmt, &sNumResults));
-        CheckResultCode(hStmt, SQLNumResultCols(hStmt, &numResults));
-        // PRINT1(numResults)
+        SQLSMALLINT numResults;
+        CHECK_RESULT_CODE(SQLNumResultCols, hStmt, &numResults);
         if (numResults > 0)
         {
             get_columns_info(numResults, columnsInfo);
@@ -287,23 +275,19 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
         else
         {
             SQLLEN cRowCount;
-            //TRYODBC(hStmt, SQL_HANDLE_STMT,SQLRowCount(hStmt, &cRowCount));
-            CheckResultCode(hStmt, SQLRowCount(hStmt, &cRowCount));
-            // PRINT1(cRowCount)
-            return cRowCount;
+            CHECK_RESULT_CODE(SQLRowCount, hStmt, &cRowCount);
+            return static_cast<int>(cRowCount);
         }
-        break;
     }
-
-    case SQL_ERROR:
-        throw Error(GetDiagnostic(hStmt, retCode));
-
-    default:
-        throw ErrorODBC("Unexpected return code ", retCode);
-    }
+    else if (SQL_ERROR == retCode)
+        throw ErrorODBC(hStmt, retCode, " In SQLExecute");
+    else
+        throw ErrorODBC(
+            hStmt, retCode, " Unexpected return code in SQLExecute");
 
     return -1;
-}
+}  // int OdbcCursor::execute_impl(...)
+
 
 OdbcCursor::OneColumnInfo::OneColumnInfo(SQLLEN type, const String &name)
 	: columnType(type), columnTypeName(name), getDataType(type)
