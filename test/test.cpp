@@ -7,6 +7,23 @@
 #endif // WIN32
 
 
+template <class Ch, class Tr, class Last>
+void print(std::basic_ostream<Ch, Tr>& os, const Last& last)
+{
+    os << last << "\n";
+}
+
+template <class Ch, class Tr, class First, class... Other>
+void print(std::basic_ostream<Ch, Tr>& os,
+    const First& first, const Other&... other)
+{
+    os << first << ", ";
+    print(os, other...);
+}
+
+#define PRINT1(v) std::cerr << #v << "=" << v << "\n";
+#define PRINTN(...) print(std::cerr, "[" #__VA_ARGS__ "]", __VA_ARGS__);
+
 using namespace dbpp;
 
 const std::string sqlite_create_table = "CREATE TABLE PERSON("
@@ -67,16 +84,20 @@ void f()
     auto cursor = connection.cursor();
     cursor.execute(sqlite_create_table);
     //show_tab(cursor, "after CREATE");
-    //cursor.execute(sql_insert_many, row1);
-    /* 
-    cursor.execute(sql_insert_1);
-    cursor.execute(sql_insert_2);
-    cursor.execute(sql_insert_3);
-    /*/
-    cursor.executemany(sql_insert_many, inputTab);
-    //*/
+    PRINT1(connection.autocommit());
+    cursor.execute(sql_insert_many, row1);
+    show_tab(cursor, "");
+    connection.rollback();
+    show_tab(cursor, "");
+    connection.autocommit(false);
+    PRINT1(connection.autocommit());
+    cursor.execute(sql_insert_many, row2);
+    show_tab(cursor, "");
+    connection.rollback();
+    //cursor.executemany(sql_insert_many, inputTab);
     // cursor.execute("SELECT * from PERSON");
     show_tab(cursor, "after INSERT");
+    PRINT1(connection.autocommit());
     //cursor.execute(sql_delete_s, { "BILL" });
     //show_tab(cursor, "after DELETE");
 }

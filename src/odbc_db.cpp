@@ -103,7 +103,36 @@ OdbcConnection::OdbcConnection(std::string const& connectString)
 
 bool OdbcConnection::autocommit()
 {
-    return false;
+    SQLULEN statusAutocommit=0;
+    CHECK_RESULT_CODE(SQLGetConnectAttr, hDbc, SQL_ATTR_AUTOCOMMIT,
+        &statusAutocommit, 0, NULL);
+    return SQL_AUTOCOMMIT_ON == statusAutocommit;
+}
+
+void OdbcConnection::autocommit(bool autocommitFlag)
+{
+    // Do smth if status need to change
+    bool currentAutoCommit = autocommit();
+    if (currentAutoCommit && !autocommitFlag)
+    {
+        CHECK_RESULT_CODE(SQLSetConnectAttr, hDbc, SQL_ATTR_AUTOCOMMIT,
+            (SQLPOINTER)SQL_AUTOCOMMIT_OFF, 0);
+    }
+    else if (!currentAutoCommit && autocommitFlag)
+    {
+        CHECK_RESULT_CODE(SQLSetConnectAttr, hDbc, SQL_ATTR_AUTOCOMMIT,
+            (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0);
+    }
+}
+
+void OdbcConnection::commit()
+{
+    CheckResultCode(hDbc, SQLEndTran(SQL_HANDLE_DBC, hDbc, SQL_COMMIT));
+}
+
+void OdbcConnection::rollback()
+{
+    CheckResultCode(hDbc, SQLEndTran(SQL_HANDLE_DBC, hDbc, SQL_ROLLBACK));
 }
 
 BaseCursor* OdbcConnection::cursor()

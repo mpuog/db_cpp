@@ -82,6 +82,9 @@ public:
 	BaseCursor* cursor() final;
 
 	bool autocommit() final;
+	void autocommit(bool autocommitFlag) final;
+	void commit() final;
+	void rollback() final;
 };
 
 class OdbcCursor : public BaseCursor, public BaseOdbc

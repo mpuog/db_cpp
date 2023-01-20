@@ -12,12 +12,9 @@ namespace dbpp
 		virtual ~BaseConnection() {}
 		virtual BaseCursor *cursor() = 0;
 		virtual bool autocommit() = 0;
-        virtual void autocommit(bool autocommitFlag) 
-        {}
-        virtual void commit() 
-        {}
-        virtual void rollback() 
-        {}
+		virtual void autocommit(bool autocommitFlag) = 0;
+        virtual void commit() = 0;
+        virtual void rollback() = 0;
 	};
 
 	class BaseCursor
