@@ -45,6 +45,19 @@ protected:
 
 class SqliteCursor : public BaseCursor, public BaseSqlite
 {
+
+	struct BindOneParam
+	{
+		sqlite3_stmt* pStmt;
+		int nParam;
+	public:
+		void operator()(const Null&);
+		void operator()(const int& i);
+		void operator()(const double& d);
+		void operator()(const String& s);
+		void operator()(const Blob& b);
+	};
+
 // ==== functions ===
     ResultRow GetRow(sqlite3_stmt* pStmt);
 public:

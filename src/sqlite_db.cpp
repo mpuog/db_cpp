@@ -113,9 +113,35 @@ ResultRow SqliteCursor::GetRow(sqlite3_stmt* pStmt)
         default:
             break;
         }
-
     }
     return row;
+}
+
+void SqliteCursor::BindOneParam::operator()(const Null&)
+{
+    sqlite3_bind_null(pStmt, nParam);
+}
+
+void SqliteCursor::BindOneParam::operator()(const int& i)
+{
+    sqlite3_bind_int(pStmt, nParam, i);
+}
+
+void SqliteCursor::BindOneParam::operator()(const double& d)
+{
+    sqlite3_bind_double(pStmt, nParam, d);
+}
+
+void SqliteCursor::BindOneParam::operator()(const String& s)
+{
+    sqlite3_bind_text(pStmt, nParam, s.c_str(), (int)s.size(), 
+        SQLITE_TRANSIENT);
+}
+
+void SqliteCursor::BindOneParam::operator()(const Blob& b)
+{
+    sqlite3_bind_blob(pStmt, nParam, b.empty() ? nullptr : &b[0],
+        (int)b.size(), SQLITE_TRANSIENT);
 }
 
 
@@ -146,7 +172,7 @@ int SqliteCursor::execute_impl(String const& sql, InputRow const& data,
 			continue;
 		}
 
-		// FIXME bind input data
+		// binding input data
         if (int paramsCount = sqlite3_bind_parameter_count(pStmt))
         {
             if (paramsCount != data.size())
@@ -156,42 +182,9 @@ int SqliteCursor::execute_impl(String const& sql, InputRow const& data,
 
             for (int n = 0; n < paramsCount; n++)
             {
-                const auto &datum = data[n];
-                switch (datum.index())
-                {
-                case 0:
-                    sqlite3_bind_null(pStmt, n + 1);
-                    break;
-                case 1:
-                    sqlite3_bind_int(pStmt, n + 1, std::get<int>(datum));
-                    break;
-                case 2:
-                    sqlite3_bind_double(pStmt, n + 1, std::get<double>(datum));
-                    break;
-                case 3:
-                {
-                    auto const& s = std::get<String>(datum);
-                    // FIXME is SQLITE_STATIC correct??? SQLITE_TRANSIENT safe but may be non effective
-                    sqlite3_bind_text(pStmt, n + 1, s.c_str(), (int)s.size(), SQLITE_TRANSIENT);
-                    break;
-                }
-                case 4:
-                {
-                    auto const& b = std::get<Blob>(datum);
-                    // FIXME empty BLOB case
-                    sqlite3_bind_blob(pStmt, n + 1, &b.front(), (int)b.size(), SQLITE_TRANSIENT);
-                    break;
-                }
-                    break;
-                default:
-                    break; // FIXME  ошибка
-                }
-
-
-
+                    std::visit(BindOneParam{ pStmt, n + 1 }, data[n]);
             }
         }
-
 		
 		// Cycle for result tab
 		for (;;)

@@ -219,29 +219,35 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
 void OdbcCursor::BindOneParam::operator()(const Null&)
 {
     cb = SQL_NULL_DATA;
-    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 0, 0, 0, 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, 
+        SQL_C_CHAR, SQL_CHAR, 0, 0, 0, 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const int& i)
 {
-    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&i, 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, 
+        SQL_C_LONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&i, 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const double& d)
 {
-    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, (SQLPOINTER)&d, 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, 
+        SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, (SQLPOINTER)&d, 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const String& s)
 {
     cb = s.size();
-    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, s.size(), 0, (SQLPOINTER)&s[0], 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, 
+        SQL_C_CHAR, SQL_CHAR, s.size(), 0, (SQLPOINTER)s.c_str(), 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const Blob& b)
 {
     cb = b.size();
-    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, b.size(), 0, (SQLPOINTER)&b[0], 0, &cb);
+    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT,   
+        SQL_C_BINARY, SQL_BINARY, b.size(), 0, 
+        cb > 0 ? (SQLPOINTER)&b[0] : nullptr, 0, &cb);  
 }
 
 void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)

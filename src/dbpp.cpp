@@ -120,7 +120,7 @@ std::ostream& operator << (
 	std::ostream& os, dbpp::Blob const& blob)
 {
 	os << "BLOB[" << blob.size() << "]:";
-	// FIXME restrict range to first 16 bytes, add size, print in hex 
+	// restrict output by first 16 bytes 
 	for (int i = 0; (i < blob.size()) && (i < 16); ++i)
 	{
 		os << " " << std::setfill('0') << std::setw(2) << std::hex 

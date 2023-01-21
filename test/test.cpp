@@ -40,7 +40,7 @@ const std::string sql_select = "SELECT * from PERSON;";
 const std::string sql_delete = "DELETE from PERSON where ID=2;";
 const std::string sql_delete_s = "DELETE from PERSON where NAME=?;";
 
-const InputRow row1 = { 1, "STEVE", 30, "1000.1", Blob{'\xf', 'a', 'b', 'c'} };
+const InputRow row1 = { 1, "STEVE", 30, "1000.1", Blob() }; //(){'\xf', 'a'} ;
 const InputRow row2 = { 2, "BILL", 20, 300.22, Blob(20, '\x1f') };
 const InputRow row3 = { 3, u8"ЖОРА", 24, 9900.9, null };
 const InputTab inputTab = { row1, row2, row3 };
@@ -68,12 +68,13 @@ void show_tab(Cursor& cursor, std::string const& comment = "", std::string const
 }
 
 
-#if 1
+#if 0
 // sqlite-odbc
 // 
 
 void f()
 {
+    std::cerr << "\ndb::odbc to sqlite\n";
     auto connection = connect(db::odbc, "Driver={SQLite3 ODBC Driver};Database="
         /*
         "test.db");
@@ -98,8 +99,8 @@ void f()
     //cursor.execute("SELECT * from PERSON");
     show_tab(cursor, "after INSERT");
     //PRINT1(connection.autocommit());
-    //cursor.execute(sql_delete_s, { "BILL" });
-    //show_tab(cursor, "after DELETE");
+    cursor.execute(sql_delete_s, { "BILL" });
+    show_tab(cursor, "after DELETE");
 }
 
 #else
@@ -109,6 +110,7 @@ void f()
 
 void f()
 {
+    std::cerr << "\ndb::sqlite\n";
     auto connection = Connection::connect(db::sqlite, ":memory:");
 
     auto cursor = connection.cursor();
