@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include "sqlite_db.hpp"
+#include  <iomanip>
 
 #ifdef DBPP_ODBC
 #include "odbc_db.hpp"
@@ -12,7 +13,7 @@ namespace dbpp
 		switch (type)
 		{
 #ifdef DBPP_ODBC
-		case dbpp::db::odbc:
+		case db::odbc:
 			return Connection(new OdbcConnection(connectString));
 #endif // DBPP_ODBC
 		case db::sqlite:
@@ -120,7 +121,12 @@ std::ostream& operator << (
 {
 	os << "BLOB[" << blob.size() << "]:";
 	// FIXME restrict range to first 16 bytes, add size, print in hex 
-	for (const auto& x : blob)
-		os << " " << x ;
-	return os;
+	for (int i = 0; (i < blob.size()) && (i < 16); ++i)
+	{
+		os << " " << std::setfill('0') << std::setw(2) << std::hex 
+		   << unsigned(blob[i]);
+	}
+	if (blob.size() > 16)
+		os << " ...";
+	return os << std::dec;
 }

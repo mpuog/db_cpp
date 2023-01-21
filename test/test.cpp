@@ -40,8 +40,8 @@ const std::string sql_select = "SELECT * from PERSON;";
 const std::string sql_delete = "DELETE from PERSON where ID=2;";
 const std::string sql_delete_s = "DELETE from PERSON where NAME=?;";
 
-const InputRow row1 = { 1, "STEVE", 30, 1000.1, Blob{'a', 'b', 'c'}};
-const InputRow row2 = { 2, "BILL", 20, 300.22, null };
+const InputRow row1 = { 1, "STEVE", 30, "1000.1", Blob{'\xf', 'a', 'b', 'c'} };
+const InputRow row2 = { 2, "BILL", 20, 300.22, Blob(20, '\x1f') };
 const InputRow row3 = { 3, u8"ЖОРА", 24, 9900.9, null };
 const InputTab inputTab = { row1, row2, row3 };
 //const std::string sql_insert_1 =
@@ -84,20 +84,20 @@ void f()
     auto cursor = connection.cursor();
     cursor.execute(sqlite_create_table);
     //show_tab(cursor, "after CREATE");
-    PRINT1(connection.autocommit());
-    cursor.execute(sql_insert_many, row1);
-    show_tab(cursor, "");
-    connection.rollback();
-    show_tab(cursor, "");
-    connection.autocommit(false);
-    PRINT1(connection.autocommit());
-    cursor.execute(sql_insert_many, row2);
-    show_tab(cursor, "");
-    connection.rollback();
-    //cursor.executemany(sql_insert_many, inputTab);
-    // cursor.execute("SELECT * from PERSON");
+    //PRINT1(connection.autocommit());
+    //cursor.execute(sql_insert_many, row1);
+    //show_tab(cursor, "");
+    //connection.rollback();
+    //show_tab(cursor, "");
+    //connection.autocommit(false);
+    //PRINT1(connection.autocommit());
+    //cursor.execute(sql_insert_many, row2);
+    //show_tab(cursor, "");
+    //connection.rollback();
+    cursor.executemany(sql_insert_many, inputTab);
+    //cursor.execute("SELECT * from PERSON");
     show_tab(cursor, "after INSERT");
-    PRINT1(connection.autocommit());
+    //PRINT1(connection.autocommit());
     //cursor.execute(sql_delete_s, { "BILL" });
     //show_tab(cursor, "after DELETE");
 }

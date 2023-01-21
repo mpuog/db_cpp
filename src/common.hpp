@@ -59,7 +59,7 @@ namespace dbpp
 		}
 
 
-		/// Simple implementation by reading from resutTab
+		/// Simple implementation by reading from resultTab
 		/// @retval "empty" std::optional if all data recieved
 		virtual std::optional<ResultRow> fetchone()
 		{

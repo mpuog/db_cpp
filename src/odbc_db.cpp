@@ -36,14 +36,23 @@ std::string format_message_with_code(SqlHandle &handle, RETCODE retCode)
 {
     std::ostringstream oss;
     oss << "Code(";
-    // TODO text instead of code num
-    /*
-#define SQL_ERROR                   (-1)
-#define SQL_INVALID_HANDLE          (-2)
-
-#define SQL_STILL_EXECUTING         2
-#define SQL_NEED_DATA               99
-    */
+    switch (retCode)
+    {
+    case SQL_ERROR:
+        oss << "SQL_ERROR=";
+        break;
+    case SQL_INVALID_HANDLE:
+        oss << "SQL_INVALID_HANDLE=";
+        break;
+    case SQL_STILL_EXECUTING:
+        oss << "SQL_STILL_EXECUTING=";
+        break;
+    case SQL_NEED_DATA:
+        oss << "SQL_NEED_DATA=";
+        break;
+    default:
+        break;
+    }
     
     oss << retCode << "):";
 
@@ -225,12 +234,13 @@ void OdbcCursor::BindOneParam::operator()(const double& d)
 
 void OdbcCursor::BindOneParam::operator()(const String& s)
 {
-    cb = SQL_NTS;
+    cb = s.size();
     CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, s.size(), 0, (SQLPOINTER)&s[0], 0, &cb);
 }
 
 void OdbcCursor::BindOneParam::operator()(const Blob& b)
 {
+    cb = b.size();
     CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, b.size(), 0, (SQLPOINTER)&b[0], 0, &cb);
 }
 
