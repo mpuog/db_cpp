@@ -2,7 +2,7 @@
 #include <iterator>
 #include <string>
 #include <dbpp.hpp>
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #endif // WIN32
 
@@ -169,8 +169,7 @@ void f()
 
 int main()
 {
-#ifdef WIN32
-    // работает в Mingw64, НЕ работает в VS!!!
+#ifdef _WIN32
     SetConsoleOutputCP(65001);
 #endif // WIN32
 
@@ -181,7 +180,7 @@ int main()
         << "GCC:" << __GNUC__
 #endif // _MSC_VER
 
-#ifdef WIN32
+#ifdef _WIN32
         << " WINDOWS "
 #else
         << " LINUX " 
