@@ -32,17 +32,19 @@ const std::string sqlite_create_table = "CREATE TABLE PERSON("
 ",AGE            INT     NOT NULL "
 ",SALARY         REAL "
 ",DATA           BLOB"
+", COMMENT TEXT"
 ")";
 
 const std::string sql_insert_many =
-    "INSERT INTO PERSON VALUES(?, ?, ?, ?, ?);";
+    "INSERT INTO PERSON VALUES(?, ?, ?, ?, ?, ?);";
 const std::string sql_select = "SELECT * from PERSON;";
 const std::string sql_delete = "DELETE from PERSON where ID=2;";
 const std::string sql_delete_s = "DELETE from PERSON where NAME=?;";
 
-const InputRow row1 = { 1, "STEVE", 30, "1000.1", Blob() }; //(){'\xf', 'a'} ;
-const InputRow row2 = { 2, "BILL", 20, 300.22, Blob(20, '\x1f') };
-const InputRow row3 = { 3, u8"ЖОРА", 24, 9900.9, null };
+const InputRow row1 = { 1, "STEVE", 30, "1000.1", Blob(), "OK"};
+// Blob() '\xf' 'a' ;
+const InputRow row2 = { 2, "BILL", 20, 300.22, Blob(7, '\x1f'), ""};
+const InputRow row3 = { 3, u8"ЖОРА", 24, 9900.9, null, null};
 const InputTab inputTab = { row1, row2, row3 };
 //const std::string sql_insert_1 =
 //"INSERT INTO PERSON VALUES(1, 'STEVE', 30, 1000.0);";
@@ -68,21 +70,67 @@ void show_tab(Cursor& cursor, std::string const& comment = "", std::string const
 }
 
 
+// test selector
 #if 0
-// sqlite-odbc
-// 
+#define DIRECT_SQLITE_TEST
+#else
+//*
+#define ODBC_SQLITE_TEST
+/*/
+#define ODBC_POSTGES_TEST
+//*/
+#endif
+
+
+#ifdef ODBC_POSTGES_TEST
+
+void f()
+{
+    std::cerr << "\ndb::odbc to PostgreSQL\n";
+    auto connection = connect(db::odbc, 
+        "Driver={PostgreSQL ODBC Driver(UNICODE)};"
+        "Server=localhost;Port=5432;Database=pg_test_1;"
+        "Uid=postgres;Pwd=qwe123!;");
+
+    auto cursor = connection.cursor();
+    cursor.execute("DROP TABLE IF EXISTS public.person; ");
+
+    cursor.execute("CREATE TABLE PERSON(ID INT PRIMARY KEY NOT NULL, NAME TEXT NOT NULL, AGE INT NOT NULL, SALARY REAL, DATA BYTEA, COMMENT TEXT)");
+    show_tab(cursor, "after CREATE");
+    PRINT1(connection.autocommit());
+    show_tab(cursor, "");
+    cursor.execute(sql_insert_many, row1);
+    //connection.rollback();
+    //show_tab(cursor, "");
+    //connection.autocommit(false);
+    //PRINT1(connection.autocommit());
+    cursor.execute(sql_insert_many, row2);
+    cursor.execute(sql_insert_many, row3);
+    //show_tab(cursor, "");
+    //connection.rollback();
+    //cursor.executemany(sql_insert_many, inputTab);
+    //cursor.execute("SELECT * from PERSON");
+    show_tab(cursor, "after INSERT");
+    //PRINT1(connection.autocommit());
+    //cursor.execute(sql_delete_s, { "BILL" });
+    //show_tab(cursor, "after DELETE");
+}
+#endif
+
+#ifdef ODBC_SQLITE_TEST
 
 void f()
 {
     std::cerr << "\ndb::odbc to sqlite\n";
     auto connection = connect(db::odbc, "Driver={SQLite3 ODBC Driver};Database="
-        /*
+        //*
         "test.db");
         /*/
         ":memory:");
         //*/
 
     auto cursor = connection.cursor();
+    cursor.execute("DROP TABLE IF EXISTS person; ");
     cursor.execute(sqlite_create_table);
     //show_tab(cursor, "after CREATE");
     //PRINT1(connection.autocommit());
@@ -103,10 +151,9 @@ void f()
     show_tab(cursor, "after DELETE");
 }
 
-#else
+#endif
 
-// sqlite 
-// 
+#ifdef DIRECT_SQLITE_TEST
 
 void f()
 {

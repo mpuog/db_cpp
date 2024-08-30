@@ -50,9 +50,12 @@ namespace dbpp {
 	/// Type for binary data
 	using Blob = std::vector<char>;
 
+	/// Macro for result types
+#define DBPP_RESULT_TYPES Null, int, double, String, Blob
+
 	/// Result cell of SQL SELECT operation
 	/// @todo guid, date/time
-	using ResultCell = std::variant<Null, int, double, String, Blob>;
+	using ResultCell = std::variant<DBPP_RESULT_TYPES>;
 
 	/// Result row of SQL SELECT operation (fetchone function)
 	using ResultRow = std::vector<ResultCell>;
@@ -60,9 +63,10 @@ namespace dbpp {
 	/// Result tab of SQL SELECT operation (fetchmany/fetchall functions)
 	using ResultTab = std::vector<ResultRow> ;
 
-	/// Input datum for SQL INSERT/UPDATE operation. 
+	/// Input datum for SQL INSERT/UPDATE operation.
+	/// Always include DBPP_RESULT_TYPES and mayby smth other
 	/// @todo guid, date/time
-	using InputCell = std::variant<Null, int, double, String, Blob>;
+	using InputCell = std::variant<DBPP_RESULT_TYPES>;
 
 	/// Input row for SQL INSERT/UPDATE operation (execute function)
 	using InputRow = std::vector<InputCell>;

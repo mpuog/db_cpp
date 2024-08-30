@@ -93,7 +93,7 @@ class OdbcCursor : public BaseCursor, public BaseOdbc
 	struct OneColumnInfo
 	{
 		// SQL_DESC_CONCISE_TYPE ?? or SQL_DESC_TYPE
-		SQLLEN columnType;  ///< column type id
+		SQLLEN columnType;  ///< column type id (sql.h/sqlext.h)
 		String columnTypeName;  ///< column type name
 		size_t indexVariant;  ///< index in ResultCell variant if data isn't null
 		SQLLEN getDataType;  ///< type for using in SQLGetData function

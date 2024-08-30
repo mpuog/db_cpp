@@ -181,7 +181,9 @@ ResultCell OdbcCursor::get_cell(SQLSMALLINT nCol)
             cell = std::move(s);
         }
     }
-    else if (SQL_BINARY == getDataType)
+    else if ((SQL_BINARY == getDataType)
+         || (SQL_VARBINARY == getDataType)
+         || (SQL_LONGVARBINARY == getDataType))
     {
         CHECK_RESULT_CODE(SQLGetData, hStmt, nCol, SQL_C_BINARY, buf, 0, &indicator);
         if (indicator == SQL_NULL_DATA)
@@ -244,10 +246,20 @@ void OdbcCursor::BindOneParam::operator()(const String& s)
 
 void OdbcCursor::BindOneParam::operator()(const Blob& b)
 {
-    cb = b.size();
-    CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT,   
-        SQL_C_BINARY, SQL_BINARY, b.size(), 0, 
-        cb > 0 ? (SQLPOINTER)&b[0] : nullptr, 0, &cb);  
+    // Empty blob writes as NULL. This behaviour implements
+    // in sqlite, but not in postgres
+    if (cb = b.size())
+    {
+        CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT,   
+            SQL_C_BINARY, SQL_BINARY, b.size(), 0, 
+              (SQLPOINTER)&b[0], 0, &cb);  
+    }
+    else
+    {
+        cb = SQL_NULL_DATA;
+        CHECK_RESULT_CODE(SQLBindParameter, hStmt, nParam, SQL_PARAM_INPUT,
+            SQL_C_CHAR, SQL_CHAR, 0, 0, 0, 0, &cb);
+    }
 }
 
 void OdbcCursor::get_columns_info(SQLSMALLINT numResults, ColumnsInfo& columnsInfo)
@@ -301,7 +313,7 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
         std::visit(BindOneParam{ hStmt, n, idsParam[n - 1] }, data[n - 1]);
     }
 
-    // FIXME in Windows comnwert to wchar_t sequence?
+    // FIXME in Windows comnvert to wchar_t sequence?
     CHECK_RESULT_CODE(SQLPrepare, hStmt, (SQLCHAR*)query.c_str(), SQL_NTS);
 
     RETCODE retCode = SQLExecute(hStmt);
@@ -334,6 +346,8 @@ int OdbcCursor::execute_impl(String const &query, InputRow const &data,
 OdbcCursor::OneColumnInfo::OneColumnInfo(SQLLEN type, const String &name)
 	: columnType(type), columnTypeName(name), getDataType(type)
 {
+	// Select what is the type for output cell
+    // FIXME check other types in sql.h/sqlext.h
 	if (SQL_INTEGER == columnType)
     {
         indexVariant = 1;
@@ -342,13 +356,15 @@ OdbcCursor::OneColumnInfo::OneColumnInfo(SQLLEN type, const String &name)
     {
         indexVariant = 2;
     }
-    else if ("BLOB" == columnTypeName)
+    else if ((SQL_BINARY == columnType) 
+          || (SQL_VARBINARY == columnType)
+          || (SQL_LONGVARBINARY == columnType))
     {
         indexVariant = 4;
     }
     else  
     {
-        // all unknown as text, will be converted by used ODBC/DB convrrter
+        // all unknown as text, will be converted by used ODBC/DB converter
         indexVariant = 3;
         getDataType = SQL_C_CHAR;
     }
